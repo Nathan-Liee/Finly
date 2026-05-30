@@ -25,13 +25,45 @@ export const saveTransaksiLocal = async (tanggal, transaksi) => {
   const db = await openDB();
   const tx = db.transaction('transaksi', 'readwrite');
   const store = tx.objectStore('transaksi');
-  await store.clear();
-  transaksi.forEach(t => {
-    store.add({ ...t, tanggal, synced: false });
-  });
+  
   return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    const request = store.getAll();
+    request.onsuccess = () => {
+      const all = request.result || [];
+      // Hapus yang tanggalnya sama
+      all.filter(t => t.tanggal === tanggal).forEach(t => {
+        store.delete(t.id);
+      });
+      // Tambah yang baru
+      transaksi.forEach(t => {
+        store.add({ ...t, tanggal, synced: false });
+      });
+      resolve();
+    };
+    request.onerror = () => reject(request.error);
+  });
+};
+
+export const saveAllToLocal = async (kasHarian, transaksi) => {
+  const db = await openDB();
+  const txUang = db.transaction('uang_awal', 'readwrite');
+  const storeUang = txUang.objectStore('uang_awal');
+  
+  kasHarian?.forEach(k => {
+    storeUang.put({ tanggal: k.tanggal, uang_awal: k.uang_awal, synced: true });
+  });
+
+  const txTrans = db.transaction('transaksi', 'readwrite');
+  const storeTrans = txTrans.objectStore('transaksi');
+  
+  return new Promise((resolve, reject) => {
+    storeTrans.clear().onsuccess = () => {
+      transaksi?.forEach(t => {
+        storeTrans.add({ ...t, synced: true });
+      });
+      resolve();
+    };
+    txTrans.onerror = () => reject(txTrans.error);
   });
 };
 

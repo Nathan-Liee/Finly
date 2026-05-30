@@ -1,5 +1,10 @@
 {
   "appId": "com.kastoko.app",
   "appName": "Kas Toko",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "Filesystem": {
+      "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE "]
+    }
+  }
 }
