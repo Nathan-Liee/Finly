@@ -1,8 +1,6 @@
-# Kas Toko
+# Kasapp
 
-A simple multi-user cash management application designed for small shops to track daily income and expenses.
-
-Kas Toko helps store owners record transactions, categorize expenses, and view financial reports in a simple and practical interface.
+Aplikasi kas online sederhana untuk membantu bisnis keluarga, toko kecil, UMKM mikro, dan penggunaan pribadi dalam mencatat pemasukan, pengeluaran, saldo, dan laporan harian — tanpa spreadsheet.
 
 ---
 
@@ -14,139 +12,159 @@ Kas Toko helps store owners record transactions, categorize expenses, and view f
 <img src="./assets/Report.png" width="250">
 </p>
 
-Live Demo
-https://kas-app-mauve.vercel.app/
+**Live Demo:** https://kas-app-mauve.vercel.app/
 
 ---
 
 ## Features
 
-* Multi-user system with authentication
-* Record income (Cash / QRIS)
-* Expense categorization
-* Daily, weekly, and monthly reports
-* Secure database access using Row Level Security
-* Responsive web interface
-* Android build support
+- Multi-user authentication (email + password)
+- Email confirmation flow via link (bukan OTP kode angka)
+- Record income transactions (Cash & QRIS)
+- Record expense transactions with categorization
+- Initial balance (uang awal) management per day
+- Daily, weekly, and monthly financial reports
+- Smart daily insights & mini bar chart on dashboard
+- User-based secure database access using Row Level Security (RLS)
+- Responsive web interface
+- Android build support using Capacitor
 
 ---
 
 ## Tech Stack
 
-Frontend
+**Frontend**
+- React
+- Vite
 
-* React
-* Vite
+**Backend & Database**
+- Supabase
+- PostgreSQL
+- Supabase Auth
+- Row Level Security (RLS)
 
-Backend & Database
+**Deployment**
+- Vercel
 
-* Supabase (PostgreSQL + Auth)
+**Mobile**
+- Capacitor
+- Android APK support
 
-Deployment
-
-* Vercel
-
-Mobile
-
-* Capacitor (Android APK)
-
-Version Control
-
-* Git & GitHub
+**Version Control**
+- Git
+- GitHub
 
 ---
 
 ## Architecture
 
+```
 User
-↓
-React Frontend
-↓
-Supabase Client
-↓
+  ↓
+React Frontend (Vite)
+  ↓
+Supabase Client (@supabase/supabase-js)
+  ↓
 Supabase API
-↓
+  ↓
 PostgreSQL Database
+```
 
-Row Level Security (RLS) ensures each user only accesses their own data.
+Row Level Security (RLS) aktif pada setiap tabel, memastikan setiap user hanya bisa membaca, menulis, dan mengelola data miliknya sendiri. Tidak ada user yang bisa mengakses data user lain.
 
 ---
 
 ## Database Design
 
-Example core tables:
+Tabel utama yang digunakan:
 
-Users
-Stores basic user authentication data.
+| Tabel | Deskripsi |
+|-------|-----------|
+| `profiles` | Menyimpan data profil user (username, email). Terhubung ke Supabase Auth via user ID. |
+| `transaksi` | Menyimpan semua record pemasukan dan pengeluaran per user. |
+| `uang_awal` | Menyimpan saldo awal (cash) per hari per user. |
 
-Transactions
-Stores all income and expense records.
-
-Categories
-Used to classify different types of expenses.
+Semua tabel menggunakan kolom `user_id` yang merujuk ke `auth.users.id` dan dilindungi oleh RLS policies.
 
 ---
 
 ## Installation
 
-Clone repository
-
-```
+```bash
 git clone https://github.com/Nathan-Liee/kas-toko.git
-```
-
-Go to project folder
-
-```
 cd kas-toko
-```
-
-Install dependencies
-
-```
 npm install
-```
-
-Run development server
-
-```
 npm run dev
 ```
+
+Aplikasi akan berjalan di `http://localhost:5173`.
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file and add:
+Buat file `.env` atau `.env.local` di root project:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_publishable_or_anon_key
+```
+
+> **Warning:** Do **NOT** expose Supabase secret key or service role key in the frontend. Hanya gunakan publishable/anon key di sisi client.
+
+---
+
+## Deployment
+
+Aplikasi dideploy ke Vercel. Pastikan environment variable berikut dipasang di Vercel project settings:
 
 ```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
 ```
+
+Setiap push ke branch `main` akan otomatis trigger deployment di Vercel.
 
 ---
 
 ## Roadmap
 
-### Completed
+### ✅ Completed
 - Multi-user authentication
-- Transaction recording
+- Email confirmation flow
+- Username / profile display fix
+- Transaction recording (income & expense)
+- Cash and QRIS transaction support
 - Expense categorization
-- Daily / weekly / monthly reports
-- Web deployment
-- Android build
+- Initial balance management
+- Daily, weekly, and monthly reports
+- Smart daily insights
+- Secure database access with RLS
+- Web deployment (Vercel)
+- Android build support (Capacitor)
 
-### Next
-- Edit & Reset transcation
-- Transaction filtering
-- Dasboard analytics
-- Data export
-- Offline mode & Auto Sync
+### 🔜 Next
+- Edit and reset transaction
+- Transaction filtering & search
+- Dashboard analytics & charts
+- Data export (CSV / PDF)
+- Offline mode with IndexedDB
+- Auto sync when back online
+
+---
+
+## Use Case
+
+Kasapp cocok untuk:
+- 🏪 Family businesses — pencatatan kas harian untuk usaha keluarga
+- 🛒 Small shops — toko kelontong, warung, kios
+- 📦 Micro SMEs — UMKM yang butuh pencatatan sederhana
+- 👤 Personal cash tracking — catatan keuangan pribadi
+- 📋 Simple daily financial recording — alternatif spreadsheet yang lebih praktis
+
 ---
 
 ## Author
 
-Nathan Liee
-
-GitHub
-https://github.com/Nathan-Liee
+**Nathan Liee**
+GitHub: https://github.com/Nathan-Liee
