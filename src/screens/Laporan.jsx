@@ -67,8 +67,7 @@ function LaporanHarianContent({ data, selectedDate, calc }) {
   );
 }
 
-function LaporanMingguan({ data, calc }) {
-  const dates = Object.keys(data).sort((a, b) => b.localeCompare(a));
+function LaporanMingguan({ data, calc, dates }) {
   const weeks = {};
   dates.forEach(tgl => {
     const date = new Date(tgl + 'T00:00:00');
@@ -128,8 +127,7 @@ function LaporanMingguan({ data, calc }) {
   );
 }
 
-function LaporanBulanan({ data, calc }) {
-  const dates = Object.keys(data).sort((a, b) => b.localeCompare(a));
+function LaporanBulanan({ data, calc, dates }) {
   const months = {};
   dates.forEach(tgl => {
     const monthKey = tgl.substring(0, 7);
@@ -194,6 +192,15 @@ export default function LaporanScreen({
   modalOpen, setModal, closeModal,
 }) {
   const [activeTab, setActiveTab] = useState("harian");
+  const [filterDari, setFilterDari] = useState("");
+  const [filterSampai, setFilterSampai] = useState("");
+
+  // Filter rentang tanggal (hanya mempengaruhi tampilan, bukan data asli)
+  const filteredDates = dates.filter(tgl => {
+    if (filterDari && tgl < filterDari) return false;
+    if (filterSampai && tgl > filterSampai) return false;
+    return true;
+  });
 
   const tabs = [
     { key: "harian",   label: "Harian" },
@@ -203,7 +210,7 @@ export default function LaporanScreen({
 
   const exportCSV = () => {
     const rows = [["Tanggal", "Tipe", "Metode", "Kategori", "Catatan", "Jumlah"]];
-    dates.forEach(tgl => {
+    filteredDates.forEach(tgl => {
       const c = calc(tgl);
       c.transaksi?.forEach(t => {
         rows.push([
@@ -247,12 +254,34 @@ export default function LaporanScreen({
         ))}
       </div>
 
+      {/* Filter rentang tanggal */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center" }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ color: "#6b6b88", fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Dari</label>
+          <input type="date" value={filterDari} onChange={e => setFilterDari(e.target.value)}
+            style={{ width: "100%", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 13, fontFamily: "'Sora',sans-serif" }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={{ color: "#6b6b88", fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Sampai</label>
+          <input type="date" value={filterSampai} onChange={e => setFilterSampai(e.target.value)}
+            style={{ width: "100%", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 13, fontFamily: "'Sora',sans-serif" }} />
+        </div>
+        {(filterDari || filterSampai) && (
+          <button onClick={() => { setFilterDari(""); setFilterSampai(""); }}
+            style={{ marginTop: 16, padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.12)", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+            Reset
+          </button>
+        )}
+      </div>
+
       {activeTab === "harian" && (
-        dates.length === 0 ? (
-          <Card><p style={{ color: "#555577", textAlign: "center", margin: "24px 0", fontSize: 14 }}>Belum ada data</p></Card>
+        filteredDates.length === 0 ? (
+          <Card><p style={{ color: "#555577", textAlign: "center", margin: "24px 0", fontSize: 14 }}>
+            {dates.length === 0 ? "Belum ada data" : "Tidak ada data dalam rentang ini"}
+          </p></Card>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {dates.map(tgl => {
+            {filteredDates.map(tgl => {
               const c = calc(tgl);
               return (
                 <button key={tgl} onClick={() => { setSelectedDate(tgl); setModal("laporanHarian"); }}
@@ -276,8 +305,8 @@ export default function LaporanScreen({
         )
       )}
 
-      {activeTab === "mingguan" && <LaporanMingguan data={data} calc={calc} />}
-      {activeTab === "bulanan" && <LaporanBulanan data={data} calc={calc} />}
+      {activeTab === "mingguan" && <LaporanMingguan data={data} calc={calc} dates={filteredDates} />}
+      {activeTab === "bulanan" && <LaporanBulanan data={data} calc={calc} dates={filteredDates} />}
 
       <Modal show={modalOpen === "laporanHarian"} onClose={closeModal} title={`Laporan — ${selectedDate}`}>
         <LaporanHarianContent data={data} selectedDate={selectedDate} calc={calc} />
