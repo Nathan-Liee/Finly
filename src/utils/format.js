@@ -1,10 +1,10 @@
 export function formatUang(n) {
-  return "Rp " + Number(n).toLocaleString("id-ID");
+  return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
 }
 
 export function formatAngka(str) {
   // Hapus semua titik terlebih dahulu
-  const cleaned = str.replace(/\./g, "");
+  const cleaned = String(str ?? "").replace(/\./g, "");
   // Pastikan hanya angka
   const onlyNumbers = cleaned.replace(/[^0-9]/g, "");
   // Format dengan separator ribuan
