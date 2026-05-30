@@ -255,20 +255,20 @@ export default function LaporanScreen({
       </div>
 
       {/* Filter rentang tanggal */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center" }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ color: "#6b6b88", fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Dari</label>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 120 }}>
+          <label style={{ color: "#8888aa", fontSize: 11, fontWeight: 600, letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Dari</label>
           <input type="date" value={filterDari} onChange={e => setFilterDari(e.target.value)}
-            style={{ width: "100%", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 13, fontFamily: "'Sora',sans-serif" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 14, fontFamily: "'Sora',sans-serif", outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
         </div>
-        <div style={{ flex: 1 }}>
-          <label style={{ color: "#6b6b88", fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Sampai</label>
+        <div style={{ flex: 1, minWidth: 120 }}>
+          <label style={{ color: "#8888aa", fontSize: 11, fontWeight: 600, letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Sampai</label>
           <input type="date" value={filterSampai} onChange={e => setFilterSampai(e.target.value)}
-            style={{ width: "100%", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 13, fontFamily: "'Sora',sans-serif" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 14, fontFamily: "'Sora',sans-serif", outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
         </div>
         {(filterDari || filterSampai) && (
           <button onClick={() => { setFilterDari(""); setFilterSampai(""); }}
-            style={{ marginTop: 16, padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.12)", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+            style={{ alignSelf: "flex-end", padding: "10px 14px", borderRadius: 12, border: "1.5px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.12)", color: "#EF4444", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "'Sora',sans-serif" }}>
             Reset
           </button>
         )}
