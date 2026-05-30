@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
 
-export const useRealtime = (tableName) => {
+export const useRealtime = (tableName, userId = null) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!tableName) return;
+    if (!tableName || !userId) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
 
     let isMounted = true;
 
@@ -15,10 +19,16 @@ export const useRealtime = (tableName) => {
       setLoading(true);
       setError(null);
 
-      const { data: initialData, error: fetchError } = await supabase
-        .from(tableName)
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from(tableName).select('*');
+      
+      // Filter by user_id kalau tersedia
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+      
+      query = query.order('created_at', { ascending: false });
+
+      const { data: initialData, error: fetchError } = await query;
 
       if (!isMounted) return;
 
@@ -35,31 +45,37 @@ export const useRealtime = (tableName) => {
 
     fetchData();
 
-    const channel = supabase
-      .channel(`live-${tableName}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: tableName },
-        (payload) => {
-          if (!isMounted) return;
-          if (payload.eventType === 'INSERT') {
-            setData((prev) => [payload.new, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setData((prev) =>
-              prev.map((item) => (item.id === payload.new.id ? payload.new : item))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setData((prev) => prev.filter((item) => item.id !== payload.old.id));
+    // Realtime subscription — hanya aktif kalau user sudah login
+    let channel = null;
+    if (userId) {
+      channel = supabase
+        .channel(`live-${tableName}-${userId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: tableName, filter: `user_id=eq.${userId}` },
+          (payload) => {
+            if (!isMounted) return;
+            if (payload.eventType === 'INSERT') {
+              setData((prev) => [payload.new, ...prev]);
+            } else if (payload.eventType === 'UPDATE') {
+              setData((prev) =>
+                prev.map((item) => (item.id === payload.new.id ? payload.new : item))
+              );
+            } else if (payload.eventType === 'DELETE') {
+              setData((prev) => prev.filter((item) => item.id !== payload.old.id));
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
 
     return () => {
       isMounted = false;
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
-  }, [tableName]);
+  }, [tableName, userId]);
 
   return { data, loading, error };
 };
