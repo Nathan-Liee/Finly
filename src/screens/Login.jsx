@@ -79,11 +79,15 @@ export default function LoginScreen({ onLogin }) {
         const { data, error } = await supabase.auth.signUp({
           email: trimmedEmail,
           password: trimmedPassword,
+          options: {
+            data: { username: trimmedUsername }
+          }
         });
         if (error) throw error;
 
         if (data.user) {
-          await supabase.from('profiles').insert({
+          // upsert agar tidak gagal kalau trigger Supabase sudah buat row profile
+          await supabase.from('profiles').upsert({
             id: data.user.id,
             username: trimmedUsername,
             email: trimmedEmail,

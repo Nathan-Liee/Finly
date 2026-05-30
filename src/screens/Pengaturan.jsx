@@ -6,7 +6,7 @@ import Icon from "../components/Icon";
 import Btn from "../components/Button";
 import Field from "../components/Field";
 import { formatUang } from "../utils/format";
-import { updateProfile, updatePassword } from "../utils/storage";
+import { updateProfile, updatePassword, getDisplayName } from "../utils/storage";
 import { supabase } from "../utils/supabase";
 
 // ← Dipindah ke luar komponen
@@ -42,7 +42,7 @@ function RiwayatUangAwal({ dates, data, setUbahTarget, setFormUangAwal, setModal
 export default function PengaturanScreen({
   data, today, dates,
   setUbahTarget, setFormUangAwal, setModal,
-  profile, setProfile, onLogout
+  profile, setProfile, user, onLogout
 }) {
   const [editUsername, setEditUsername] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -142,12 +142,12 @@ export default function PengaturanScreen({
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
           <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,#7C3AED,#4F46E5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <span style={{ color: "#fff", fontWeight: 800, fontSize: 18, fontFamily: "'Sora',sans-serif" }}>
-              {profile?.username?.[0]?.toUpperCase() || "U"}
+              {getDisplayName(profile, user)[0].toUpperCase()}
             </span>
           </div>
           <div>
             <p style={{ margin: "0 0 2px", color: "#fff", fontWeight: 700, fontSize: 16, fontFamily: "'Sora',sans-serif" }}>
-              {profile?.username || "User"}
+              {getDisplayName(profile, user)}
             </p>
             <p style={{ margin: 0, color: "#6b6b88", fontSize: 12 }}>{profile?.email || ""}</p>
           </div>
@@ -230,8 +230,26 @@ export default function PengaturanScreen({
         Info Aplikasi
       </p>
       <Card style={{ marginBottom: 16 }}>
-        <p style={{ margin: "0 0 8px", color: "#ddd", fontWeight: 700, fontSize: 15, fontFamily: "'Sora',sans-serif" }}>Kas App</p>
+        <p style={{ margin: "0 0 8px", color: "#ddd", fontWeight: 700, fontSize: 15, fontFamily: "'Sora',sans-serif" }}>Kasapp</p>
         <p style={{ margin: 0, color: "#6b6b88", fontSize: 13 }}>Manajemen kas harian dengan laporan cash, QRIS, dan pengeluaran per kategori.</p>
+
+        {/* Mode selector */}
+        <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
+          {["UMKM", "Event"].map(mode => (
+            <button key={mode}
+              onClick={() => { try { localStorage.setItem('kasapp_mode', mode); } catch{} }}
+              style={{
+                flex: 1, padding: "10px 8px", borderRadius: 10,
+                border: `1.5px solid rgba(99,102,241,0.3)`,
+                background: "rgba(99,102,241,0.08)",
+                color: "#6366F1", fontSize: 12, fontWeight: 700,
+                cursor: "pointer", fontFamily: "'Sora',sans-serif",
+              }}>
+              {mode === "UMKM" ? "🏪" : "🎪"} {mode}
+            </button>
+          ))}
+        </div>
+
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <Badge color="#6366F1">v{version}</Badge>
           <Badge color="#10B981">{dates.length} Hari Tersimpan</Badge>

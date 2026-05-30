@@ -2,7 +2,59 @@ import { useState } from "react";
 import Card from "../components/Card";
 import Icon from "../components/Icon";
 import { formatHari, formatUang } from "../utils/format";
+import { getDisplayName } from "../utils/storage";
 import TransaksiRow from "../components/TransaksiRow";
+
+/* ─── Smart Daily Report ─── */
+function SmartDailyReport({ todayCalc, today }) {
+  const { totalMasuk, totalKeluar, saldoCash, transaksi, kategoriMap } = todayCalc;
+  const jmlTransaksi = transaksi?.length ?? 0;
+
+  if (jmlTransaksi === 0) return null;
+
+  // Generate smart insights
+  const insights = [];
+
+  if (totalMasuk > 0 && totalKeluar > 0) {
+    const profit = totalMasuk - totalKeluar;
+    const margin = totalMasuk > 0 ? ((profit / totalMasuk) * 100).toFixed(0) : 0;
+    insights.push(
+      profit >= 0
+        ? `📈 Profit hari ini ${formatUang(profit)} (margin ${margin}%)`
+        : `📉 Defisit ${formatUang(Math.abs(profit))} — pengeluaran melebihi pemasukan`
+    );
+  }
+
+  if (totalMasuk > 0) {
+    insights.push(`💰 Pemasukan ${formatUang(totalMasuk)} dari ${transaksi?.filter(t => t.type === "masuk").length ?? 0} transaksi`);
+  }
+
+  // Top kategori pengeluaran
+  if (kategoriMap && Object.keys(kategoriMap).length > 0) {
+    const topKategori = Object.entries(kategoriMap).sort((a, b) => b[1] - a[1])[0];
+    insights.push(`🏷️ Pengeluaran terbesar: ${topKategori[0]} (${formatUang(topKategori[1])})`);
+  }
+
+  if (jmlTransaksi >= 5) {
+    insights.push(`🔥 ${jmlTransaksi} transaksi hari ini — hari yang sibuk!`);
+  }
+
+  return (
+    <Card style={{ marginBottom: 20, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.06)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <Icon name="chart" size={18} color="#6366F1" />
+        <p style={{ color: "#6366F1", fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", margin: 0 }}>
+          Smart Daily Report
+        </p>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {insights.map((insight, i) => (
+          <p key={i} style={{ color: "#ccc", fontSize: 12, margin: 0, lineHeight: 1.5 }}>{insight}</p>
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 function MiniGrafik({ data, today }) {
   const [expanded, setExpanded] = useState(false);
@@ -109,7 +161,7 @@ function MiniGrafik({ data, today }) {
   );
 }
 
-export default function HomeScreen({ data, today, todayCalc, setModal, setTab, profile }) {
+export default function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user }) {
   return (
     <div style={{ paddingBottom: 100 }}>
       {/* Header */}
@@ -123,7 +175,7 @@ export default function HomeScreen({ data, today, todayCalc, setModal, setTab, p
         <MiniGrafik data={data} today={today} />
 
         <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", margin: "0 0 4px" }}>
-          Halo, {profile?.username || "User"}
+          Halo, {getDisplayName(profile, user)}
         </p>
         <h1 style={{ color: "#fff", fontSize: 28, fontFamily: "'Sora', sans-serif", fontWeight: 800, margin: "0 0 4px" }}>
           {formatUang(todayCalc.saldoCash ?? 0)}
@@ -145,8 +197,9 @@ export default function HomeScreen({ data, today, todayCalc, setModal, setTab, p
         </div>
       </div>
 
-      {/* Saldo Cards */}
+      {/* Smart Daily Report */}
       <div style={{ padding: "0 16px" }}>
+        <SmartDailyReport todayCalc={todayCalc} today={today} />
         <p style={{ color: "#6366F1", fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>
           Ringkasan Saldo
         </p>
