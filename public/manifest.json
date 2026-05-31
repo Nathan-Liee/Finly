@@ -1,6 +1,6 @@
 {
-  "name": "Kasapp — Kas Toko Digital",
-  "short_name": "Kasapp",
+    "name": "Finly - Finance App",
+    "short_name": "Finly",
   "description": "Aplikasi kas digital untuk toko. Catat pemasukan, pengeluaran, dan pantau saldo harian.",
   "start_url": "/",
   "display": "standalone",

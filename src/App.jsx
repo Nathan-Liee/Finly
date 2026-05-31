@@ -320,17 +320,43 @@ export default function App() {
 
   /* ─── Loading screen ─── */
   if (authLoading) return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-      <div style={{ width: 52, height: 52, borderRadius: 16, background: "var(--gradient)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ color: "#fff", fontWeight: 800, fontSize: 24, fontFamily: "'Inter', sans-serif" }}>K</span>
+    <div style={{
+      minHeight: "100vh",
+      background: "var(--bg)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 24,
+      padding: 20,
+      textAlign: "center"
+    }}>
+      <div className="pulse-logo" style={{
+        width: 90,
+        height: 90,
+        borderRadius: 24,
+        background: "var(--surface)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+        overflow: "hidden"
+      }}>
+        <img src="/logo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.05)" }} />
       </div>
-      <div style={{ display: "flex", gap: 6 }}>
-        {[0,1,2].map(i => (
-          <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", animation: `bounce 1s ease-in-out ${i * 0.2}s infinite` }}/>
-        ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <h2 style={{ color: "var(--text)", fontSize: 22, fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>Finly</h2>
+        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", animation: `bounce 1s ease-in-out ${i * 0.2}s infinite` }}/>
+          ))}
+        </div>
       </div>
-      <p style={{ color: "var(--text-muted)", fontSize: 13, fontFamily: "'Inter', sans-serif" }}>Memuat Kasapp...</p>
-      <style>{`@keyframes bounce { 0%,100%{transform:translateY(0);opacity:.4} 50%{transform:translateY(-8px);opacity:1} }`}</style>
+      <style>{`
+        @keyframes bounce { 0%,100%{transform:translateY(0);opacity:.3} 50%{transform:translateY(-6px);opacity:1} }
+        .pulse-logo { animation: pulse-logo 2s infinite ease-in-out; }
+        @keyframes pulse-logo { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.9; } }
+      `}</style>
     </div>
   );
 

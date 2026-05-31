@@ -1,4 +1,4 @@
-# <p align="center"><img src="./public/logo.png" width="120" alt="Kasapp Logo"/><br/>Kasapp</p>
+# <p align="center"><img src="./public/logo.png" width="120" alt="Finly Logo"/><br/>Finly</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <strong>Kasapp</strong> adalah aplikasi manajemen keuangan pribadi modern yang dirancang untuk kecepatan, keamanan, dan kemudahan penggunaan. Fokus pada stabilitas rendering mobile dan pengalaman pengguna yang intuitif.
+  <strong>Finly</strong> adalah aplikasi manajemen keuangan pribadi modern yang dirancang untuk kecepatan, keamanan, dan kemudahan penggunaan. Fokus pada stabilitas rendering mobile dan pengalaman pengguna yang intuitif.
 </p>
 
 ---
