@@ -5,20 +5,21 @@ export default function Modal({ show, onClose, title, children }) {
 
   return (
     <div
+      className="modal-overlay"
       style={{
         position: "fixed",
         inset: 0,
         background: "var(--color-surface-overlay)",
-        backdropFilter: "blur(4px)",
+        backdropFilter: "blur(2px)",
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
         zIndex: 2000,
-        animation: "fadeIn 0.15s ease",
       }}
       onClick={onClose}
     >
       <div
+        className="modal-content"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
@@ -28,7 +29,6 @@ export default function Modal({ show, onClose, title, children }) {
           padding: "24px 20px 32px",
           maxHeight: "90vh",
           overflowY: "auto",
-          animation: "slideUp 0.25s ease",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
@@ -60,10 +60,6 @@ export default function Modal({ show, onClose, title, children }) {
         </div>
         {children}
       </div>
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
-      `}</style>
     </div>
   );
 }

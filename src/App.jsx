@@ -301,6 +301,23 @@ export default function App() {
   const dates = Object.keys(data).sort((a, b) => b.localeCompare(a));
   const calc = useCallback((tanggal) => safeCalc(data[tanggal]), [data]);
 
+  /* Stable callbacks for HomeScreen — MUST be before conditional returns */
+  const handleEditTx = useCallback((idx) => {
+    setEditIdx(idx);
+    const t = data[today]?.transaksi?.[idx];
+    if (!t) return;
+    setFormEditJumlah(String(t.jumlah ?? ""));
+    setFormEditMetode(t.metode || "cash");
+    setFormEditKategori(t.kategori || "");
+    setFormEditCatatan(t.catatan || "");
+    setModal("editTransaksi");
+  }, [data, today, setEditIdx, setFormEditJumlah, setFormEditMetode, setFormEditKategori, setFormEditCatatan, setModal]);
+
+  const handleDeleteTx = useCallback((idx) => {
+    setHapusIdx(idx);
+    setModal("konfirmHapus");
+  }, [setHapusIdx, setModal]);
+
   /* ─── Loading screen ─── */
   if (authLoading) return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
@@ -366,28 +383,40 @@ export default function App() {
 
         {/* ─── Screens ─── */}
         {tab === "home" && (
-          <HomeScreen data={data} today={today} todayCalc={todayCalc} setModal={setModal} setTab={setTab} profile={profile} user={user} />
+          <div key="home" className="page-transition">
+            <HomeScreen
+              data={data} today={today} todayCalc={todayCalc}
+              setModal={setModal} setTab={setTab}
+              profile={profile} user={user}
+              onEditTx={handleEditTx}
+              onDeleteTx={handleDeleteTx}
+            />
+          </div>
         )}
         {tab === "laporan" && (
-          <LaporanScreen
-            data={data} today={today} dates={dates} calc={calc}
-            selectedDate={selectedDate} setSelectedDate={setSelectedDate}
-            modalOpen={modal} setModal={setModal} closeModal={closeModal}
-          />
+          <div key="laporan" className="page-transition">
+            <LaporanScreen
+              data={data} today={today} dates={dates} calc={calc}
+              selectedDate={selectedDate} setSelectedDate={setSelectedDate}
+              modalOpen={modal} setModal={setModal} closeModal={closeModal}
+            />
+          </div>
         )}
         {tab === "pengaturan" && (
-          <PengaturanScreen
-            data={data} today={today} dates={dates}
-            setUbahTarget={setUbahTarget} setFormUangAwal={setFormUangAwal} setModal={setModal}
-            profile={profile} setProfile={setProfile} user={user}
-            onLogout={async () => { try { await supabase.auth.signOut(); } catch{} setUser(null); setData({}); setProfile(null); setTab("home"); }}
-          />
+          <div key="pengaturan" className="page-transition">
+            <PengaturanScreen
+              data={data} today={today} dates={dates}
+              setUbahTarget={setUbahTarget} setFormUangAwal={setFormUangAwal} setModal={setModal}
+              profile={profile} setProfile={setProfile} user={user}
+              onLogout={async () => { try { await supabase.auth.signOut(); } catch{} setUser(null); setData({}); setProfile(null); setTab("home"); }}
+            />
+          </div>
         )}
 
         {/* ─── Bottom nav ─── */}
         <div style={{
           position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
-          width: "100%", maxWidth: 440, background: "var(--navbar)", backdropFilter: "blur(20px)",
+          width: "100%", maxWidth: 440, background: "var(--navbar)",
           borderTop: "1px solid var(--navbar-border)", display: "flex", zIndex: 100,
         }}>
           {TABS.map((t) => (
@@ -413,14 +442,14 @@ export default function App() {
             <button onClick={() => setModal("keluar")} style={{
               width: 50, height: 50, borderRadius: 16, background: "var(--danger)",
               border: "none", cursor: "pointer", display: "flex", alignItems: "center",
-              justifyContent: "center", boxShadow: "0 4px 12px rgba(239, 68, 68, 0.3)",
+              justifyContent: "center", boxShadow: "0 2px 8px rgba(239, 68, 68, 0.25)",
             }}>
               <Icon name="minus" size={22} color="#fff" />
             </button>
             <button onClick={() => setModal("masuk")} style={{
               width: 50, height: 50, borderRadius: 16, background: "var(--gradient)",
               border: "none", cursor: "pointer", display: "flex", alignItems: "center",
-              justifyContent: "center", boxShadow: "0 4px 12px rgba(107, 126, 255, 0.3)",
+              justifyContent: "center", boxShadow: "0 2px 8px rgba(107, 126, 255, 0.25)",
             }}>
               <Icon name="plus" size={22} color="#fff" />
             </button>
@@ -584,6 +613,120 @@ export default function App() {
               </div>
             </>
           )}
+        </Modal>
+
+        {/* Clear all data */}
+        <Modal show={modal === "clearData"} onClose={closeModal} title="Hapus Semua Data">
+          <div>
+            <div style={{
+              width: 56, height: 56, borderRadius: 16, background: "var(--danger-subtle)",
+              display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
+            }}>
+              <Icon name="trash" size={24} color="var(--danger)" />
+            </div>
+            <p style={{ color: "var(--text-secondary)", fontSize: 13, margin: "0 0 8px", textAlign: "center", lineHeight: 1.5 }}>
+              Semua data transaksi, uang awal, dan riwayat akan dihapus permanen. Tindakan ini <strong>tidak bisa dibatalkan</strong>.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+              <Btn onClick={closeModal} variant="ghost">Batal</Btn>
+              <Btn
+                onClick={async () => {
+                  try {
+                    const { clearAllData } = await import("./db/index");
+                    await clearAllData?.();
+                  } catch {}
+                  try { localStorage.removeItem("kasapp-data"); } catch {}
+                  setData({}); setToday(getCurrentDate());
+                  closeModal();
+                  showToast("Semua data berhasil dihapus!", "info");
+                }}
+                variant="danger"
+                icon="trash"
+              >
+                Hapus Semua
+              </Btn>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Export data */}
+        <Modal show={modal === "export"} onClose={closeModal} title="Export Data">
+          <div>
+            <div style={{
+              width: 56, height: 56, borderRadius: 16, background: "var(--success-subtle)",
+              display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
+            }}>
+              <Icon name="download" size={24} color="var(--success)" />
+            </div>
+            <p style={{ color: "var(--text-secondary)", fontSize: 13, margin: "0 0 16px", textAlign: "center", lineHeight: 1.5 }}>
+              Download semua data transaksi dalam format CSV. File bisa dibuka di Excel, Google Sheets, atau aplikasi spreadsheet lainnya.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <Btn
+                onClick={() => {
+                  // Export JSON for backup/restore
+                  const exportData = { data, exportedAt: new Date().toISOString(), version: "1.8.0" };
+                  const json = JSON.stringify(exportData, null, 2);
+                  const blob = new Blob([json], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a"); a.href = url; a.download = `kasapp-backup-${today}.json`; a.click();
+                  URL.revokeObjectURL(url);
+                  closeModal();
+                  showToast("Backup JSON berhasil di-export!", "success");
+                }}
+                variant="ghost"
+                icon="download"
+              >
+                Backup JSON
+              </Btn>
+              <Btn
+                onClick={() => {
+                  // Trigger export from Laporan
+                  const btn = document.createElement("button");
+                  btn.style.display = "none";
+                  btn.onclick = () => {
+                    const esc = (v) => { const s = String(v ?? ""); return /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+                    let totalMasuk = 0, totalKeluar = 0, totalTransaksi = 0;
+                    const allDates = Object.keys(data).sort((a, b) => b.localeCompare(a));
+                    allDates.forEach(tgl => {
+                      const tx = data[tgl]?.transaksi ?? [];
+                      tx.forEach(t => { if (t.type === "masuk") totalMasuk += t.jumlah ?? 0; else totalKeluar += t.jumlah ?? 0; });
+                      totalTransaksi += tx.length;
+                    });
+                    const lines = [];
+                    lines.push([esc("Aplikasi"), esc("Kasapp")].join(","));
+                    lines.push([esc("Tanggal Export"), esc(new Date().toLocaleString("id-ID"))].join(","));
+                    lines.push([esc("Total Transaksi"), totalTransaksi].join(","));
+                    lines.push([esc("Total Pemasukan"), totalMasuk].join(","));
+                    lines.push([esc("Total Pengeluaran"), totalKeluar].join(","));
+                    lines.push([esc("Saldo Bersih"), totalMasuk - totalKeluar].join(","));
+                    lines.push("");
+                    lines.push([esc("Tanggal"), esc("Tipe"), esc("Metode"), esc("Kategori"), esc("Catatan"), esc("Jumlah")].join(","));
+                    allDates.forEach(tgl => {
+                      data[tgl]?.transaksi?.forEach(t => {
+                        lines.push([esc(tgl), esc(t.type === "masuk" ? "Pemasukan" : "Pengeluaran"), esc(t.metode?.toUpperCase() || "-"), esc(t.kategori || "-"), esc(t.catatan || "-"), t.jumlah].join(","));
+                      });
+                    });
+                    const csv = "\uFEFF" + lines.join("\n");
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a"); a.href = url; a.download = `kasapp-laporan-${today}.csv`; a.click();
+                    URL.revokeObjectURL(url);
+                  };
+                  document.body.appendChild(btn); btn.click(); document.body.removeChild(btn);
+                  closeModal();
+                  showToast("Data berhasil di-export!", "success");
+                }}
+                variant="success"
+                icon="download"
+              >
+                Download CSV
+              </Btn>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <Btn onClick={closeModal} variant="ghost" fullWidth>Tutup</Btn>
+            </div>
+          </div>
         </Modal>
       </div>
     </>

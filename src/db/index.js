@@ -138,3 +138,16 @@ export const clearSyncQueue = async () => {
     tx.onerror = () => reject(tx.error);
   });
 };
+
+// Hapus semua data (transaksi, uang awal, sync queue)
+export const clearAllData = async () => {
+  const db = await openDB();
+  const tx = db.transaction(['transaksi', 'uang_awal', 'sync_queue'], 'readwrite');
+  tx.objectStore('transaksi').clear();
+  tx.objectStore('uang_awal').clear();
+  tx.objectStore('sync_queue').clear();
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+};

@@ -10,3 +10,55 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
+
+/* ─── Page Transitions ─── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.page-transition {
+  animation: fadeInUp 0.25s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
+/* ─── Modal Animations ─── */
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-backdrop {
+  animation: modalFadeIn 0.2s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
+.modal-content {
+  animation: modalSlideUp 0.25s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
+/* ─── Button Tap Feedback ─── */
+.btn-tap {
+  transition: transform 0.1s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1));
+}
+.btn-tap:active {
+  transform: scale(0.95);
+}
+
+/* ─── Stagger List Items ─── */
+@keyframes staggerIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stagger-item {
+  animation: staggerIn 0.2s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}

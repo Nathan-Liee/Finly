@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import Card from "../components/Card";
 import Icon from "../components/Icon";
 import { formatUang } from "../utils/format";
@@ -25,10 +26,10 @@ function calcAggregate(data) {
 /* ═══════════════════════════════════════════
  *  HOME SCREEN
  * ═══════════════════════════════════════════ */
-export default function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user }) {
+const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user, onEditTx, onDeleteTx }) {
   const saldo = todayCalc.saldoCash ?? 0;
   const todayTransaksi = data[today]?.transaksi ?? [];
-  const agg = calcAggregate(data);
+  const agg = useMemo(() => calcAggregate(data), [data]);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -207,8 +208,11 @@ export default function HomeScreen({ data, today, todayCalc, setModal, setTab, p
           </Card>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[...todayTransaksi].reverse().map((t, i) => (
-              <div key={i} style={{
+            {[...todayTransaksi].reverse().map((t, revIdx) => {
+              const realIdx = todayTransaksi.length - 1 - revIdx;
+              const stableKey = `${realIdx}-${t.type}-${t.jumlah}-${t.metode || ''}-${t.kategori || ''}`;
+              return (
+              <div key={stableKey} style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "12px 14px", background: "var(--surface)", border: "1px solid var(--border)",
                 borderRadius: 14,
@@ -239,11 +243,36 @@ export default function HomeScreen({ data, today, todayCalc, setModal, setTab, p
                 }}>
                   {t.type === "masuk" ? "+" : "-"}{formatUang(t.jumlah)}
                 </p>
+                {(onEditTx || onDeleteTx) && (
+                  <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                    {onEditTx && (
+                      <button onClick={() => onEditTx(realIdx)} style={{
+                        width: 30, height: 30, borderRadius: 8, border: "none",
+                        background: "var(--accent-subtle)", cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <Icon name="edit" size={13} color="var(--accent)" />
+                      </button>
+                    )}
+                    {onDeleteTx && (
+                      <button onClick={() => onDeleteTx(realIdx)} style={{
+                        width: 30, height: 30, borderRadius: 8, border: "none",
+                        background: "var(--danger-subtle)", cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <Icon name="trash" size={13} color="var(--danger)" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
     </div>
   );
-}
+});
+
+export default HomeScreen;

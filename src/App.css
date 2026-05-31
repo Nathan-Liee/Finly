@@ -13,3 +13,66 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* ─── Page Transitions ─── */
+.page-transition {
+  animation: pageIn 0.25s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Modal Animations ─── */
+.modal-overlay {
+  animation: fadeIn 0.2s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
+.modal-content {
+  animation: slideUp 0.25s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─── Button tap feedback ─── */
+.tap-scale:active {
+  transform: scale(0.96);
+  transition: transform 0.1s;
+}
+
+/* ─── Stagger list items ─── */
+.stagger-item {
+  animation: staggerIn 0.3s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
+@keyframes staggerIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

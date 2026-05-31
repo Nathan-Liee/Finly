@@ -1,72 +1,136 @@
 import { useState } from "react";
 import { version } from '../../package.json';
-import Card from "../components/Card";
-import Badge from "../components/Badge";
 import Icon from "../components/Icon";
-import Btn from "../components/Button";
-import Field from "../components/Field";
 import { formatUang } from "../utils/format";
 import { updateProfile, updatePassword, getDisplayName } from "../utils/storage";
 import { supabase } from "../utils/supabase";
 import { toggleTheme } from "../theme";
 
 /* ═══════════════════════════════════════════
- *  PENGATURAN SCREEN
+ *  PENGATURAN SCREEN — NEW LAYOUT
+ *  iOS-style settings list with sections
  * ═══════════════════════════════════════════ */
 
-/* ─── Riwayat Uang Awal ─── */
-function RiwayatUangAwal({ dates, data, setUbahTarget, setFormUangAwal, setModal }) {
-  const [show, setShow] = useState(false);
-  if (dates.length === 0) return null;
+/* ─── Setting Row Component ─── */
+function SettingRow({ icon, iconColor, title, subtitle, action, danger, toggle, toggleValue, badge }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div>
-      <button onClick={() => setShow(!show)} style={{
-        width: "100%", background: "var(--surface)", border: "1px solid var(--border)",
-        borderRadius: 12, padding: "10px 14px", cursor: "pointer", color: "var(--text-secondary)",
-        fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 12, textAlign: "left",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
+    <button
+      onClick={action || undefined}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: "100%", display: "flex", alignItems: "center", gap: 14,
+        padding: "14px 16px", background: hovered ? "var(--input-bg)" : "var(--surface)",
+        border: "none", cursor: action ? "pointer" : "default",
+        transition: "background 0.15s", textAlign: "left",
+      }}
+    >
+      {/* Icon */}
+      <div style={{
+        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+        background: danger ? "var(--danger-subtle)" : (iconColor ? `${iconColor}-subtle` : "var(--accent-subtle)"),
+        display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <span>Riwayat uang awal ({dates.length} hari)</span>
-        <span style={{ fontSize: 10 }}>{show ? "▲" : "▼"}</span>
-      </button>
-      {show && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-          {dates.map(tgl => (
-            <div key={tgl} style={{
-              background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12,
-              padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center",
-            }}>
-              <div>
-                <p style={{ margin: "0 0 2px", color: "var(--text)", fontWeight: 600, fontSize: 13 }}>{tgl}</p>
-                <p style={{ margin: 0, color: "var(--success)", fontSize: 12, fontWeight: 700 }}>{formatUang(data[tgl]?.uang_awal ?? 0)}</p>
-              </div>
-              <button onClick={() => { setUbahTarget(tgl); setFormUangAwal(String(data[tgl]?.uang_awal ?? "")); setModal("ubahAwal"); }} style={{
-                background: "var(--accent-subtle)", border: "none", borderRadius: 8,
-                padding: "6px 10px", cursor: "pointer", color: "var(--accent)",
-              }}>
-                <Icon name="edit" size={14} />
-              </button>
-            </div>
-          ))}
+        <Icon name={icon} size={16} color={danger ? "var(--danger)" : (iconColor || "var(--accent)")} />
+      </div>
+
+      {/* Text */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          margin: "0 0 1px", fontSize: 14, fontWeight: 600,
+          color: danger ? "var(--danger)" : "var(--text)",
+          fontFamily: "'Inter', sans-serif",
+        }}>
+          {title}
+        </p>
+        {subtitle && (
+          <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>
+            {subtitle}
+          </p>
+        )}
+      </div>
+
+      {/* Right side */}
+      {badge && (
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: "var(--accent)",
+          background: "var(--accent-subtle)", padding: "3px 8px", borderRadius: 8,
+        }}>
+          {badge}
+        </span>
+      )}
+      {toggle !== undefined && (
+        <div style={{
+          width: 44, height: 24, borderRadius: 12, flexShrink: 0,
+          background: toggle ? "var(--accent)" : "var(--border)",
+          position: "relative", transition: "background 0.2s",
+        }}>
+          <div style={{
+            width: 20, height: 20, borderRadius: "50%",
+            background: "#fff", position: "absolute", top: 2,
+            left: toggle ? 22 : 2,
+            transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+          }} />
         </div>
       )}
+      {action && !toggle && !badge && (
+        <Icon name="chevronRight" size={16} color="var(--text-muted)" />
+      )}
+    </button>
+  );
+}
+
+/* ─── Section Header ─── */
+function SectionHeader({ title }) {
+  return (
+    <p style={{
+      margin: "0 0 6px", paddingLeft: 16,
+      color: "var(--text-muted)", fontSize: 11, fontWeight: 700,
+      letterSpacing: 0.8, textTransform: "uppercase",
+    }}>
+      {title}
+    </p>
+  );
+}
+
+/* ─── Card Container ─── */
+function SettingsCard({ children, style }) {
+  return (
+    <div style={{
+      background: "var(--surface)", border: "1px solid var(--border)",
+      borderRadius: 16, overflow: "hidden", margin: "0 20px 16px",
+      ...style,
+    }}>
+      {children}
     </div>
   );
 }
+
+/* ─── Divider ─── */
+function Divider() {
+  return <div style={{ height: 1, background: "var(--border)", margin: "0 16px" }} />;
+}
+
+/* ═══════════════════════════════════════════
+ *  MAIN COMPONENT
+ * ═══════════════════════════════════════════ */
 
 export default function PengaturanScreen({
   data, today, dates,
   setUbahTarget, setFormUangAwal, setModal,
   profile, setProfile, user, onLogout
 }) {
-  const [editUsername, setEditUsername] = useState(false);
+  /* ─── Profile editing ─── */
+  const [editMode, setEditMode] = useState(null); // "username" | "password" | null
   const [newUsername, setNewUsername] = useState("");
-  const [editPassword, setEditPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [konfirmPassword, setKonfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
-  const [konfirmLogout, setKonfirmLogout] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  /* ─── Theme ─── */
   const [isDark, setIsDark] = useState(() => {
     try { return localStorage.getItem("kasapp-theme") === "dark"; } catch { return false; }
   });
@@ -78,21 +142,17 @@ export default function PengaturanScreen({
 
   const displayName = getDisplayName(profile, user);
 
+  /* ─── Actions ─── */
   const doUpdateUsername = async () => {
     if (!newUsername.trim()) return setMsg("Username tidak boleh kosong!");
     setLoading(true);
     try {
       await updateProfile(newUsername.trim());
       setProfile({ ...profile, username: newUsername.trim() });
-      setEditUsername(false);
-      setNewUsername("");
-      setMsg("Username berhasil diubah!");
+      setEditMode(null); setNewUsername(""); setMsg("Username berhasil diubah!");
       setTimeout(() => setMsg(""), 2000);
-    } catch {
-      setMsg("Gagal mengubah username!");
-    } finally {
-      setLoading(false);
-    }
+    } catch { setMsg("Gagal mengubah username!"); }
+    finally { setLoading(false); }
   };
 
   const doUpdatePassword = async () => {
@@ -102,197 +162,339 @@ export default function PengaturanScreen({
     setLoading(true);
     try {
       await updatePassword(newPassword);
-      setEditPassword(false);
-      setNewPassword("");
-      setKonfirmPassword("");
-      setMsg("Password berhasil diubah!");
-      setTimeout(() => setMsg(""), 2000);
+      setEditMode(null); setNewPassword(""); setKonfirmPassword("");
+      setMsg("Password berhasil diubah!"); setTimeout(() => setMsg(""), 2000);
+    } catch { setMsg("Gagal mengubah password!"); }
+    finally { setLoading(false); }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!confirmDelete) return setConfirmDelete(true);
+    setLoading(true);
+    try {
+      await supabase.auth.admin?.deleteUser?.(user.id);
+      await supabase.auth.signOut();
     } catch {
-      setMsg("Gagal mengubah password!");
-    } finally {
-      setLoading(false);
+      // Fallback: just sign out
+      await supabase.auth.signOut();
+    }
+    onLogout();
+  };
+
+  const handleClearData = () => {
+    if (window.confirm("Hapus semua data transaksi? Tindakan ini tidak bisa dibatalkan.")) {
+      setModal("clearData");
     }
   };
 
-  const menuItems = [
-    {
-      title: "Ubah Username",
-      show: !editUsername,
-      action: () => { setEditUsername(true); setNewUsername(profile?.username || ""); setEditPassword(false); },
-      button: true,
-    },
-  ];
+  const handleImportData = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const imported = JSON.parse(text);
+        if (!imported.data || typeof imported.data !== "object") {
+          alert("Format file tidak valid. Harus berisi { data: {...} }");
+          return;
+        }
+        if (!window.confirm(`Import ${Object.keys(imported.data).length} hari data? Data lama akan ditimpa.`)) return;
+        localStorage.setItem("kasapp-data", JSON.stringify(imported.data));
+        window.location.reload();
+      } catch (err) {
+        alert("Gagal import: " + (err.message || "File tidak valid"));
+      }
+    };
+    input.click();
+  };
+
+  const totalSaldo = Object.keys(data).reduce((sum, tgl) => {
+    const tx = data[tgl]?.transaksi ?? [];
+    const masuk = tx.filter(t => t.type === "masuk").reduce((s, t) => s + (t.jumlah ?? 0), 0);
+    const keluar = tx.filter(t => t.type === "keluar").reduce((s, t) => s + (t.jumlah ?? 0), 0);
+    return sum + masuk - keluar;
+  }, 0);
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh", paddingBottom: 100 }}>
       {/* ─── Header ─── */}
-      <div style={{ padding: "44px 20px 16px" }}>
-        <h2 style={{ color: "var(--text)", fontSize: 20, fontWeight: 800, margin: 0, fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ padding: "44px 20px 20px" }}>
+        <h2 style={{ color: "var(--text)", fontSize: 28, fontWeight: 800, margin: "0 0 16px", fontFamily: "'Inter', sans-serif" }}>
           Pengaturan
         </h2>
-      </div>
 
-      {/* ─── Profile Card ─── */}
-      <div style={{ padding: "0 20px 20px" }}>
-        <Card style={{ padding: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 14, background: "var(--gradient)",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              <span style={{ color: "#fff", fontWeight: 800, fontSize: 18, fontFamily: "'Inter', sans-serif" }}>
-                {displayName[0].toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <p style={{ margin: "0 0 2px", color: "var(--text)", fontWeight: 700, fontSize: 16, fontFamily: "'Inter', sans-serif" }}>
-                {displayName}
-              </p>
-              <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 12 }}>{profile?.email || ""}</p>
-            </div>
-          </div>
-
-          {msg && <p style={{ color: "var(--success)", fontSize: 13, margin: "0 0 12px", textAlign: "center", fontWeight: 600 }}>{msg}</p>}
-
-          {!editUsername ? (
-            <button onClick={() => { setEditUsername(true); setNewUsername(profile?.username || ""); setEditPassword(false); }} style={{
-              width: "100%", background: "var(--accent-subtle)", border: "1px solid var(--accent-border)",
-              borderRadius: 12, padding: "11px", cursor: "pointer", color: "var(--accent)",
-              fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 13, marginBottom: 8,
-            }}>
-              Ubah Username
-            </button>
-          ) : (
-            <div style={{ marginBottom: 8 }}>
-              <Field label="Username Baru" value={newUsername} onChange={setNewUsername} placeholder="Username baru" onKeyDown={(e) => e.key === 'Enter' && doUpdateUsername()} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <Btn onClick={() => setEditUsername(false)} variant="ghost">Batal</Btn>
-                <Btn onClick={doUpdateUsername} disabled={loading}>{loading ? "Menyimpan..." : "Simpan"}</Btn>
-              </div>
-            </div>
-          )}
-
-          {!editPassword ? (
-            <button onClick={() => { setEditPassword(true); setEditUsername(false); }} style={{
-              width: "100%", background: "var(--accent-subtle)", border: "1px solid var(--accent-border)",
-              borderRadius: 12, padding: "11px", cursor: "pointer", color: "var(--accent)",
-              fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 13,
-            }}>
-              Ubah Password
-            </button>
-          ) : (
-            <div>
-              <Field label="Password Baru" value={newPassword} onChange={setNewPassword} type="password" placeholder="Minimal 6 karakter" onKeyDown={(e) => e.key === 'Enter' && doUpdatePassword()} />
-              <Field label="Konfirmasi Password" value={konfirmPassword} onChange={setKonfirmPassword} type="password" placeholder="Ulangi password baru" onKeyDown={(e) => e.key === 'Enter' && doUpdatePassword()} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <Btn onClick={() => setEditPassword(false)} variant="ghost">Batal</Btn>
-                <Btn onClick={doUpdatePassword} disabled={loading}>{loading ? "Menyimpan..." : "Simpan"}</Btn>
-              </div>
-            </div>
-          )}
-        </Card>
-      </div>
-
-      {/* ─── Uang Awal ─── */}
-      <div style={{ padding: "0 20px 20px" }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Uang Awal</p>
-        {!data[today] && (
-          <button onClick={() => setModal("setup")} style={{
-            width: "100%", background: "var(--accent-subtle)", border: "1px solid var(--accent-border)",
-            borderRadius: 14, padding: "13px", cursor: "pointer", color: "var(--accent)",
-            fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 14, marginBottom: 10,
+        {/* Profile header card */}
+        <div style={{
+          background: "var(--gradient)", borderRadius: 20, padding: "20px",
+          display: "flex", alignItems: "center", gap: 16, position: "relative", overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute", top: -20, right: -20, width: 100, height: 100,
+            borderRadius: "50%", background: "rgba(255,255,255,0.08)", pointerEvents: "none",
+          }} />
+          <div style={{
+            width: 56, height: 56, borderRadius: 16, background: "rgba(255,255,255,0.2)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            Setup Uang Awal Hari Ini
-          </button>
-        )}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {data[today] && (
-            <div style={{
-              background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12,
-              padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center",
-            }}>
-              <div>
-                <p style={{ margin: "0 0 2px", color: "var(--text)", fontWeight: 600, fontSize: 13 }}>
-                  Hari Ini
-                </p>
-                <p style={{ margin: 0, color: "var(--success)", fontSize: 13, fontWeight: 700 }}>
-                  {formatUang(data[today]?.uang_awal ?? 0)}
-                </p>
-              </div>
-              <button onClick={() => { setUbahTarget(today); setFormUangAwal(String(data[today]?.uang_awal ?? "")); setModal("ubahAwal"); }} style={{
-                background: "var(--accent-subtle)", border: "none", borderRadius: 8,
-                padding: "6px 10px", cursor: "pointer", color: "var(--accent)",
-              }}>
-                <Icon name="edit" size={14} />
-              </button>
-            </div>
-          )}
-          <RiwayatUangAwal
-            dates={dates.filter(tgl => tgl !== today)}
-            data={data}
-            setUbahTarget={setUbahTarget}
-            setFormUangAwal={setFormUangAwal}
-            setModal={setModal}
-          />
+            <span style={{ color: "#fff", fontWeight: 800, fontSize: 22, fontFamily: "'Inter', sans-serif" }}>
+              {displayName[0].toUpperCase()}
+            </span>
+          </div>
+          <div style={{ position: "relative" }}>
+            <p style={{ margin: "0 0 2px", color: "#fff", fontWeight: 700, fontSize: 18, fontFamily: "'Inter', sans-serif" }}>
+              {displayName}
+            </p>
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.7)", fontSize: 13 }}>
+              {profile?.email || "user@email.com"}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* ─── Info ─── */}
-      <div style={{ padding: "0 20px 20px" }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Info</p>
-        <Card style={{ padding: "14px 16px" }}>
-          <p style={{ margin: "0 0 4px", color: "var(--text)", fontWeight: 700, fontSize: 15, fontFamily: "'Inter', sans-serif" }}>Kasapp</p>
-          <p style={{ margin: "0 0 10px", color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.5 }}>Manajemen kas harian dengan laporan cash, QRIS, dan pengeluaran per kategori.</p>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-            <Badge color="var(--accent)">v{version}</Badge>
-            <Badge color="var(--success)">{dates.length} Hari</Badge>
-          </div>
+      {/* ─── Success Message ─── */}
+      {msg && (
+        <div style={{
+          margin: "0 20px 16px", padding: "12px 16px", borderRadius: 12,
+          background: "var(--success-subtle)", border: "1px solid rgba(16,185,129,0.2)",
+          color: "var(--success)", fontSize: 13, fontWeight: 600, textAlign: "center",
+        }}>
+          {msg}
+        </div>
+      )}
 
-          {/* Dark mode toggle */}
-          <button onClick={handleToggleTheme} style={{
-            width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "10px 14px", borderRadius: 12, border: "1px solid var(--border)",
-            background: "var(--input-bg)", cursor: "pointer",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 18 }}>{isDark ? "🌙" : "☀️"}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
-                {isDark ? "Dark Mode" : "Light Mode"}
-              </span>
-            </div>
-            <div style={{
-              width: 44, height: 24, borderRadius: 12,
-              background: isDark ? "var(--accent)" : "var(--border)",
-              position: "relative", transition: "background 0.2s",
-            }}>
-              <div style={{
-                width: 20, height: 20, borderRadius: "50%",
-                background: "#fff", position: "absolute", top: 2,
-                left: isDark ? 22 : 2,
-                transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-              }} />
-            </div>
-          </button>
-        </Card>
+      {/* ─── Quick Stats ─── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, margin: "0 20px 20px" }}>
+        <div style={{
+          background: "var(--surface)", border: "1px solid var(--border)",
+          borderRadius: 14, padding: "14px 16px", textAlign: "center",
+        }}>
+          <p style={{ margin: "0 0 4px", fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>Total Saldo</p>
+          <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--accent)", fontFamily: "'Inter', sans-serif" }}>
+            {formatUang(totalSaldo)}
+          </p>
+        </div>
+        <div style={{
+          background: "var(--surface)", border: "1px solid var(--border)",
+          borderRadius: 14, padding: "14px 16px", textAlign: "center",
+        }}>
+          <p style={{ margin: "0 0 4px", fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>Hari Aktif</p>
+          <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
+            {dates.length}
+          </p>
+        </div>
       </div>
 
-      {/* ─── Actions ─── */}
-      <div style={{ padding: "0 20px" }}>
-        <button onClick={() => setKonfirmLogout(!konfirmLogout)} style={{
-          width: "100%", background: konfirmLogout ? "var(--danger)" : "var(--danger-subtle)",
-          border: konfirmLogout ? "none" : "1px solid rgba(239,68,68,0.15)",
-          borderRadius: 14, padding: "13px", cursor: "pointer", color: "#fff",
-          fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 14, marginBottom: 8,
-          transition: "all 0.2s",
-        }}>
-          {konfirmLogout ? "Konfirmasi Keluar?" : "Keluar"}
-        </button>
-        {konfirmLogout && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-            <Btn onClick={() => setKonfirmLogout(false)} variant="ghost">Batal</Btn>
-            <Btn onClick={onLogout} variant="danger">Keluar</Btn>
+      {/* ═══════════════════════════════════════ */}
+      {/*  AKUN                                    */}
+      {/* ═══════════════════════════════════════ */}
+      <SectionHeader title="Akun" />
+      <SettingsCard>
+        {editMode === "username" ? (
+          <div style={{ padding: 16 }}>
+            <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>Ubah Username</p>
+            <input
+              value={newUsername} onChange={(e) => setNewUsername(e.target.value)}
+              placeholder="Username baru"
+              onKeyDown={(e) => e.key === "Enter" && doUpdateUsername()}
+              style={{
+                width: "100%", padding: "10px 14px", borderRadius: 10,
+                border: "1px solid var(--border)", background: "var(--input-bg)",
+                color: "var(--text)", fontSize: 14, fontFamily: "'Inter', sans-serif",
+                outline: "none", marginBottom: 10,
+              }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setEditMode(null)} style={{
+                flex: 1, padding: "10px", borderRadius: 10, border: "1px solid var(--border)",
+                background: "var(--surface)", color: "var(--text-secondary)", fontWeight: 600,
+                fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              }}>Batal</button>
+              <button onClick={doUpdateUsername} disabled={loading} style={{
+                flex: 1, padding: "10px", borderRadius: 10, border: "none",
+                background: "var(--accent)", color: "#fff", fontWeight: 600,
+                fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              }}>{loading ? "..." : "Simpan"}</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <SettingRow
+              icon="user" iconColor="var(--accent)"
+              title="Username" subtitle={displayName}
+              action={() => { setEditMode("username"); setNewUsername(profile?.username || ""); }}
+            />
+            <Divider />
+          </>
+        )}
+
+        {editMode === "password" ? (
+          <div style={{ padding: 16 }}>
+            <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>Ubah Password</p>
+            <input
+              type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Password baru (min 6 karakter)"
+              onKeyDown={(e) => e.key === "Enter" && doUpdatePassword()}
+              style={{
+                width: "100%", padding: "10px 14px", borderRadius: 10,
+                border: "1px solid var(--border)", background: "var(--input-bg)",
+                color: "var(--text)", fontSize: 14, fontFamily: "'Inter', sans-serif",
+                outline: "none", marginBottom: 8,
+              }}
+            />
+            <input
+              type="password" value={konfirmPassword} onChange={(e) => setKonfirmPassword(e.target.value)}
+              placeholder="Konfirmasi password"
+              onKeyDown={(e) => e.key === "Enter" && doUpdatePassword()}
+              style={{
+                width: "100%", padding: "10px 14px", borderRadius: 10,
+                border: "1px solid var(--border)", background: "var(--input-bg)",
+                color: "var(--text)", fontSize: 14, fontFamily: "'Inter', sans-serif",
+                outline: "none", marginBottom: 10,
+              }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setEditMode(null)} style={{
+                flex: 1, padding: "10px", borderRadius: 10, border: "1px solid var(--border)",
+                background: "var(--surface)", color: "var(--text-secondary)", fontWeight: 600,
+                fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              }}>Batal</button>
+              <button onClick={doUpdatePassword} disabled={loading} style={{
+                flex: 1, padding: "10px", borderRadius: 10, border: "none",
+                background: "var(--accent)", color: "#fff", fontWeight: 600,
+                fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              }}>{loading ? "..." : "Simpan"}</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <SettingRow
+              icon="lock" iconColor="var(--warning)"
+              title="Password" subtitle="Ubah password akun"
+              action={() => setEditMode("password")}
+            />
+          </>
+        )}
+      </SettingsCard>
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  TAMPILAN                                */}
+      {/* ═══════════════════════════════════════ */}
+      <SectionHeader title="Tampilan" />
+      <SettingsCard>
+        <SettingRow
+          icon={isDark ? "moon" : "sun"} iconColor="var(--info)"
+          title={isDark ? "Dark Mode" : "Light Mode"} subtitle="Sesuaikan tampilan aplikasi"
+          toggle={isDark} action={handleToggleTheme}
+        />
+      </SettingsCard>
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  UANG AWAL                               */}
+      {/* ═══════════════════════════════════════ */}
+      {data[today] && (
+        <>
+          <SectionHeader title="Uang Awal" />
+          <SettingsCard>
+            <SettingRow
+              icon="wallet" iconColor="var(--success)"
+              title="Hari Ini" subtitle={formatUang(data[today]?.uang_awal ?? 0)}
+              action={() => { setUbahTarget(today); setFormUangAwal(String(data[today]?.uang_awal ?? "")); setModal("ubahAwal"); }}
+            />
+          </SettingsCard>
+        </>
+      )}
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  DATA & PRIVASI                          */}
+      {/* ═══════════════════════════════════════ */}
+      <SectionHeader title="Data & Privasi" />
+      <SettingsCard>
+        <SettingRow
+          icon="download" iconColor="var(--success)"
+          title="Export Data" subtitle="Download semua data (CSV)"
+          action={() => setModal("export")}
+        />
+        <Divider />
+        <SettingRow
+          icon="upload" iconColor="var(--accent)"
+          title="Import Data" subtitle="Restore dari file JSON"
+          action={handleImportData}
+        />
+        <Divider />
+        <SettingRow
+          icon="trash" iconColor="var(--warning)"
+          title="Hapus Semua Data" subtitle="Reset semua transaksi & uang awal"
+          action={handleClearData} danger={false}
+        />
+      </SettingsCard>
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  TENTANG                                 */}
+      {/* ═══════════════════════════════════════ */}
+      <SectionHeader title="Tentang" />
+      <SettingsCard>
+        <SettingRow
+          icon="info" iconColor="var(--accent)"
+          title="Kasapp" subtitle={`Versi ${version}`}
+          badge={dates.length > 0 ? `${dates.length} hari` : null}
+        />
+        <Divider />
+        <SettingRow
+          icon="code" iconColor="var(--text-muted)"
+          title="Tech Stack" subtitle="React, Vite, Supabase"
+        />
+      </SettingsCard>
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  LOGOUT / DELETE                         */}
+      {/* ═══════════════════════════════════════ */}
+      <div style={{ padding: "20px 20px 40px" }}>
+        {!confirmDelete ? (
+          <button onClick={onLogout} style={{
+            width: "100%", padding: "14px", borderRadius: 14,
+            background: "var(--danger-subtle)", border: "1px solid rgba(239,68,68,0.15)",
+            color: "var(--danger)", fontSize: 14, fontWeight: 700,
+            cursor: "pointer", fontFamily: "'Inter', sans-serif",
+          }}>
+            Keluar
+          </button>
+        ) : (
+          <div style={{
+            background: "var(--danger-subtle)", border: "1px solid rgba(239,68,68,0.15)",
+            borderRadius: 14, padding: 16,
+          }}>
+            <p style={{ margin: "0 0 4px", color: "var(--danger)", fontWeight: 700, fontSize: 14 }}>
+              Konfirmasi Keluar?
+            </p>
+            <p style={{ margin: "0 0 12px", color: "var(--text-secondary)", fontSize: 12 }}>
+              Kamu akan kembali ke halaman login.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmDelete(false)} style={{
+                flex: 1, padding: "10px", borderRadius: 10, border: "1px solid var(--border)",
+                background: "var(--surface)", color: "var(--text)", fontWeight: 600,
+                fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              }}>Batal</button>
+              <button onClick={onLogout} style={{
+                flex: 1, padding: "10px", borderRadius: 10, border: "none",
+                background: "var(--danger)", color: "#fff", fontWeight: 600,
+                fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              }}>Keluar</button>
+            </div>
           </div>
         )}
+
+        <button onClick={handleDeleteAccount} style={{
+          width: "100%", padding: "12px", borderRadius: 12, marginTop: 10,
+          background: "none", border: "none", color: "var(--text-muted)",
+          fontSize: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+          textDecoration: "underline",
+        }}>
+          Hapus Akun Permanen
+        </button>
       </div>
     </div>
   );

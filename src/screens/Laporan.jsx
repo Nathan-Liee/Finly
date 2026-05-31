@@ -1,19 +1,16 @@
 import { useState } from "react";
 import Card from "../components/Card";
-import Badge from "../components/Badge";
-import TransaksiRow from "../components/TransaksiRow";
-import Modal from "../components/Modal";
 import Icon from "../components/Icon";
 import { formatUang } from "../utils/format";
 
 /* ═══════════════════════════════════════════
- *  LAPORAN SCREEN
- *  Combined: daily detail + weekly/monthly + simple chart
+ *  LAPORAN SCREEN — NEW LAYOUT
+ *  Analytics dashboard style
  * ═══════════════════════════════════════════ */
 
-/* ─── Simple Bar Chart ─── */
-function SimpleChart({ data, today }) {
-  const dates = Object.keys(data).sort().slice(-7);
+/* ─── Enhanced Bar Chart ─── */
+function AnalyticsChart({ data, today }) {
+  const dates = Object.keys(data).sort().slice(-14);
   if (dates.length === 0) return null;
 
   let maxVal = 0;
@@ -28,9 +25,14 @@ function SimpleChart({ data, today }) {
   if (maxVal === 0) return null;
 
   return (
-    <Card style={{ marginBottom: 16 }}>
+    <div style={{
+      background: "var(--surface)", border: "1px solid var(--border)",
+      borderRadius: 16, padding: "16px", marginBottom: 16,
+    }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>7 Hari Terakhir</p>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
+          Trend {dates.length > 7 ? "14" : "7"} Hari
+        </p>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 8, height: 8, borderRadius: 2, background: "var(--success)" }} />
@@ -42,111 +44,55 @@ function SimpleChart({ data, today }) {
           </div>
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 100 }}>
+
+      {/* Bars */}
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 80, marginBottom: 8 }}>
         {bars.map(({ tgl, masuk, keluar }) => {
-          const masukH = (masuk / maxVal) * 80;
-          const keluarH = (keluar / maxVal) * 80;
+          const masukH = (masuk / maxVal) * 64;
+          const keluarH = (keluar / maxVal) * 64;
           const isToday = tgl === today;
           return (
-            <div key={tgl} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-              <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 80 }}>
-                <div style={{
-                  width: "40%", maxWidth: 16, height: Math.max(masukH, 2),
-                  background: "var(--success)", borderRadius: "3px 3px 0 0",
-                  opacity: masuk > 0 ? 1 : 0.2,
-                }} />
-                <div style={{
-                  width: "40%", maxWidth: 16, height: Math.max(keluarH, 2),
-                  background: "var(--danger)", borderRadius: "3px 3px 0 0",
-                  opacity: keluar > 0 ? 1 : 0.2,
-                }} />
-              </div>
-              <span style={{
-                fontSize: 9, fontWeight: 600, color: isToday ? "var(--accent)" : "var(--text-muted)",
-                fontFamily: "'Inter', sans-serif",
-              }}>
-                {new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short" }).charAt(0)}
-              </span>
+            <div key={tgl} style={{ flex: 1, display: "flex", gap: 1, alignItems: "flex-end", height: 64 }}>
+              <div style={{
+                width: "50%", height: Math.max(masukH, 2),
+                background: masuk > 0 ? "var(--success)" : "var(--border)",
+                borderRadius: "3px 3px 0 0", opacity: masuk > 0 ? 1 : 0.3,
+                transition: "height 0.3s",
+              }} />
+              <div style={{
+                width: "50%", height: Math.max(keluarH, 2),
+                background: keluar > 0 ? "var(--danger)" : "var(--border)",
+                borderRadius: "3px 3px 0 0", opacity: keluar > 0 ? 1 : 0.3,
+                transition: "height 0.3s",
+              }} />
             </div>
           );
         })}
       </div>
-    </Card>
-  );
-}
 
-/* ─── Daily Detail Modal Content ─── */
-function LaporanHarianContent({ data, selectedDate, calc }) {
-  const tgl = selectedDate;
-  if (!tgl || !data[tgl]) return null;
-  const c = calc(tgl);
-
-  return (
-    <div>
-      {/* Uang Awal */}
-      <div style={{
-        background: "var(--accent-subtle)", border: "1px solid var(--accent-border)",
-        borderRadius: 14, padding: 14, marginBottom: 16,
-      }}>
-        <p style={{ color: "var(--text-secondary)", fontSize: 11, margin: "0 0 4px", fontWeight: 600 }}>Uang Awal</p>
-        <p style={{ color: "var(--accent)", fontWeight: 800, fontSize: 20, margin: 0, fontFamily: "'Inter', sans-serif" }}>
-          {formatUang(c.uang_awal)}
-        </p>
+      {/* Day labels */}
+      <div style={{ display: "flex", gap: 4 }}>
+        {bars.map(({ tgl }) => {
+          const isToday = tgl === today;
+          const d = new Date(tgl + "T00:00:00");
+          return (
+            <div key={tgl} style={{
+              flex: 1, textAlign: "center", fontSize: 9, fontWeight: 600,
+              color: isToday ? "var(--accent)" : "var(--text-muted)",
+              fontFamily: "'Inter', sans-serif",
+            }}>
+              {d.getDate()}
+            </div>
+          );
+        })}
       </div>
-
-      {/* Pemasukan */}
-      <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Pemasukan</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-        <div style={{ background: "var(--success-subtle)", border: "1px solid rgba(16,185,129,0.15)", borderRadius: 12, padding: "10px 12px" }}>
-          <p style={{ color: "var(--success)", fontSize: 10, margin: "0 0 4px", fontWeight: 600, opacity: 0.7 }}>Cash</p>
-          <p style={{ color: "var(--success)", fontSize: 13, fontWeight: 800, margin: 0 }}>{formatUang(c.totalCash)}</p>
-        </div>
-        <div style={{ background: "var(--info-subtle)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 12, padding: "10px 12px" }}>
-          <p style={{ color: "var(--info)", fontSize: 10, margin: "0 0 4px", fontWeight: 600, opacity: 0.7 }}>QRIS</p>
-          <p style={{ color: "var(--info)", fontSize: 13, fontWeight: 800, margin: 0 }}>{formatUang(c.totalQris)}</p>
-        </div>
-      </div>
-
-      {/* Pengeluaran per Kategori */}
-      {c.kategoriMap && Object.keys(c.kategoriMap).length > 0 && (
-        <>
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Pengeluaran per Kategori</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-            {Object.entries(c.kategoriMap).map(([k, v]) => (
-              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", background: "var(--surface)", borderRadius: 10, border: "1px solid var(--border)" }}>
-                <span style={{ color: "var(--text-secondary)", fontSize: 13, fontWeight: 500 }}>{k}</span>
-                <span style={{ color: "var(--danger)", fontWeight: 700, fontSize: 13 }}>{formatUang(v)}</span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* Saldo */}
-      <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Saldo Akhir</p>
-      <div style={{
-        display: "flex", justifyContent: "space-between", padding: "12px 14px",
-        background: "var(--surface)", borderRadius: 12, border: "1px solid var(--border)",
-        marginBottom: 16,
-      }}>
-        <span style={{ color: "var(--text-secondary)", fontSize: 14, fontWeight: 600 }}>Saldo</span>
-        <span style={{ color: c.saldoCash >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 800, fontSize: 16 }}>
-          {formatUang(c.saldoCash)}
-        </span>
-      </div>
-
-      {/* Transactions */}
-      <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>Transaksi</p>
-      {c.transaksi.length === 0 ? (
-        <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Tidak ada transaksi</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {c.transaksi.map((t, i) => <TransaksiRow key={i} t={t} showActions={false} />)}
-        </div>
-      )}
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════
+ *  MAIN COMPONENT
+ * ═══════════════════════════════════════════ */
 
 export default function LaporanScreen({
   data, today, dates, calc,
@@ -154,35 +100,44 @@ export default function LaporanScreen({
   modalOpen, setModal, closeModal,
 }) {
   const [activeTab, setActiveTab] = useState("harian");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const tabs = [
-    { key: "harian", label: "Harian", icon: "calendar" },
-    { key: "mingguan", label: "Mingguan", icon: "chart" },
-    { key: "bulanan", label: "Bulanan", icon: "list" },
-  ];
+  /* ─── Search filter ─── */
+  const filteredDates = searchQuery.trim()
+    ? dates.filter(tgl => {
+        const txs = data[tgl]?.transaksi ?? [];
+        return txs.some(t =>
+          (t.kategori || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (t.catatan || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (t.metode || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.type.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      })
+    : dates;
+
+  /* ─── Compute totals ─── */
+  let totalMasuk = 0, totalKeluar = 0, totalTx = 0;
+  dates.forEach(tgl => {
+    const c = calc(tgl);
+    totalMasuk += c.totalMasuk ?? 0;
+    totalKeluar += c.totalKeluar ?? 0;
+    totalTx += c.transaksi?.length ?? 0;
+  });
+  const saldoBersih = totalMasuk - totalKeluar;
 
   /* ─── Export CSV ─── */
   const exportCSV = () => {
     const esc = (v) => {
       const s = String(v ?? "");
-      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      return /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
-
-    let totalMasuk = 0, totalKeluar = 0, totalTransaksi = 0;
-    dates.forEach(tgl => {
-      const c = calc(tgl);
-      totalMasuk += c.totalMasuk ?? 0;
-      totalKeluar += c.totalKeluar ?? 0;
-      totalTransaksi += c.transaksi?.length ?? 0;
-    });
-
     const lines = [];
     lines.push([esc("Aplikasi"), esc("Kasapp")].join(","));
     lines.push([esc("Tanggal Export"), esc(new Date().toLocaleString("id-ID"))].join(","));
-    lines.push([esc("Total Transaksi"), totalTransaksi].join(","));
+    lines.push([esc("Total Transaksi"), totalTx].join(","));
     lines.push([esc("Total Pemasukan"), totalMasuk].join(","));
     lines.push([esc("Total Pengeluaran"), totalKeluar].join(","));
-    lines.push([esc("Saldo Bersih"), totalMasuk - totalKeluar].join(","));
+    lines.push([esc("Saldo Bersih"), saldoBersih].join(","));
     lines.push("");
     lines.push([esc("Tanggal"), esc("Tipe"), esc("Metode"), esc("Kategori"), esc("Catatan"), esc("Jumlah")].join(","));
     dates.forEach(tgl => {
@@ -195,7 +150,6 @@ export default function LaporanScreen({
         ].join(","));
       });
     });
-
     const csv = "\uFEFF" + lines.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -206,7 +160,7 @@ export default function LaporanScreen({
     URL.revokeObjectURL(url);
   };
 
-  /* ─── Weekly aggregation ─── */
+  /* ─── Weekly ─── */
   const renderMingguan = () => {
     const weeks = {};
     dates.forEach(tgl => {
@@ -220,54 +174,66 @@ export default function LaporanScreen({
     });
 
     const weekKeys = Object.keys(weeks).sort((a, b) => b.localeCompare(a));
-    if (weekKeys.length === 0) return <Card><p style={{ color: "var(--text-muted)", textAlign: "center", margin: "24px 0", fontSize: 14 }}>Belum ada data</p></Card>;
+    if (weekKeys.length === 0) return (
+      <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
+        <p style={{ margin: "0 0 4px", fontSize: 15 }}>Belum ada data</p>
+      </div>
+    );
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {weekKeys.map(weekKey => {
           const weekDates = weeks[weekKey];
-          const totalMasuk = weekDates.reduce((s, tgl) => s + (calc(tgl).totalMasuk ?? 0), 0);
-          const totalKeluar = weekDates.reduce((s, tgl) => s + (calc(tgl).totalKeluar ?? 0), 0);
+          const wMasuk = weekDates.reduce((s, tgl) => s + (calc(tgl).totalMasuk ?? 0), 0);
+          const wKeluar = weekDates.reduce((s, tgl) => s + (calc(tgl).totalKeluar ?? 0), 0);
           const endDate = new Date(weekKey + "T00:00:00");
           endDate.setDate(endDate.getDate() + 6);
           return (
-            <Card key={weekKey} style={{ padding: "14px 16px" }}>
+            <div key={weekKey} style={{
+              background: "var(--surface)", border: "1px solid var(--border)",
+              borderRadius: 14, padding: "14px 16px",
+            }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                 <div>
-                  <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 14, fontFamily: "'Inter', sans-serif", color: "var(--text)" }}>
+                  <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 14, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
                     {new Date(weekKey + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short" })} — {endDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
                   </p>
-                  <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 12 }}>{weekDates.length} hari aktif</p>
+                  <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 12 }}>{weekDates.length} hari</p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: "0 0 2px", color: "var(--success)", fontWeight: 700, fontSize: 13 }}>+{formatUang(totalMasuk)}</p>
-                  <p style={{ margin: 0, color: "var(--danger)", fontSize: 12 }}>-{formatUang(totalKeluar)}</p>
+                  <p style={{ margin: "0 0 2px", color: "var(--success)", fontWeight: 700, fontSize: 13 }}>+{formatUang(wMasuk)}</p>
+                  <p style={{ margin: 0, color: "var(--danger)", fontSize: 12 }}>-{formatUang(wKeluar)}</p>
                 </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {/* Mini bars for the week */}
+              <div style={{ display: "flex", gap: 3, height: 32, alignItems: "flex-end", marginTop: 8 }}>
                 {weekDates.map(tgl => {
                   const c = calc(tgl);
+                  const total = (c.totalMasuk ?? 0) + (c.totalKeluar ?? 0);
+                  const maxW = Math.max(...weekDates.map(d => (calc(d).totalMasuk ?? 0) + (calc(d).totalKeluar ?? 0)), 1);
+                  const h = (total / maxW) * 28;
                   return (
-                    <div key={tgl} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: "var(--input-bg)", borderRadius: 8 }}>
-                      <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>
-                        {new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
+                    <div key={tgl} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                      <div style={{
+                        width: "100%", maxWidth: 20, height: Math.max(h, 3),
+                        background: total > 0 ? "var(--accent)" : "var(--border)",
+                        borderRadius: "3px 3px 0 0", opacity: total > 0 ? 1 : 0.2,
+                      }} />
+                      <span style={{ fontSize: 8, color: "var(--text-muted)", fontWeight: 600 }}>
+                        {new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short" }).charAt(0)}
                       </span>
-                      <div style={{ display: "flex", gap: 12 }}>
-                        <span style={{ color: "var(--success)", fontSize: 12, fontWeight: 600 }}>+{formatUang(c.totalMasuk ?? 0)}</span>
-                        <span style={{ color: "var(--danger)", fontSize: 12, fontWeight: 600 }}>-{formatUang(c.totalKeluar ?? 0)}</span>
-                      </div>
                     </div>
                   );
                 })}
               </div>
-            </Card>
+            </div>
           );
         })}
       </div>
     );
   };
 
-  /* ─── Monthly aggregation ─── */
+  /* ─── Monthly ─── */
   const renderBulanan = () => {
     const months = {};
     dates.forEach(tgl => {
@@ -276,36 +242,141 @@ export default function LaporanScreen({
       months[monthKey].push(tgl);
     });
     const monthKeys = Object.keys(months).sort((a, b) => b.localeCompare(a));
-    if (monthKeys.length === 0) return <Card><p style={{ color: "var(--text-muted)", textAlign: "center", margin: "24px 0", fontSize: 14 }}>Belum ada data</p></Card>;
+    if (monthKeys.length === 0) return (
+      <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
+        <p style={{ margin: "0 0 4px", fontSize: 15 }}>Belum ada data</p>
+      </div>
+    );
+
+    const maxMonthly = Math.max(...monthKeys.map(mk => {
+      const md = months[mk];
+      return md.reduce((s, tgl) => s + (calc(tgl).totalMasuk ?? 0) + (calc(tgl).totalKeluar ?? 0), 0);
+    }), 1);
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {monthKeys.map(monthKey => {
           const monthDates = months[monthKey];
-          const totalMasuk = monthDates.reduce((s, tgl) => s + (calc(tgl).totalMasuk ?? 0), 0);
-          const totalKeluar = monthDates.reduce((s, tgl) => s + (calc(tgl).totalKeluar ?? 0), 0);
-          const saldo = totalMasuk - totalKeluar;
+          const mMasuk = monthDates.reduce((s, tgl) => s + (calc(tgl).totalMasuk ?? 0), 0);
+          const mKeluar = monthDates.reduce((s, tgl) => s + (calc(tgl).totalKeluar ?? 0), 0);
+          const mSaldo = mMasuk - mKeluar;
+          const mTotal = mMasuk + mKeluar;
           const [year, month] = monthKey.split("-");
           const monthName = new Date(year, month - 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+          const progressPct = maxMonthly > 0 ? (mTotal / maxMonthly) * 100 : 0;
+
           return (
-            <Card key={monthKey} style={{ padding: "14px 16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+            <div key={monthKey} style={{
+              background: "var(--surface)", border: "1px solid var(--border)",
+              borderRadius: 14, padding: "14px 16px",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div>
-                  <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 15, fontFamily: "'Inter', sans-serif", color: "var(--text)" }}>{monthName}</p>
-                  <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 12 }}>{monthDates.length} hari aktif</p>
+                  <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 15, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
+                    {monthName}
+                  </p>
+                  <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 12 }}>{monthDates.length} hari • {mTotal > 0 ? `${monthDates.reduce((s, tgl) => s + (calc(tgl).transaksi?.length ?? 0), 0)} transaksi` : "belum ada transaksi"}</p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: "0 0 2px", color: "var(--success)", fontWeight: 700, fontSize: 13 }}>+{formatUang(totalMasuk)}</p>
-                  <p style={{ margin: 0, color: "var(--danger)", fontSize: 12 }}>-{formatUang(totalKeluar)}</p>
+                  <p style={{ margin: "0 0 2px", color: mSaldo >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 800, fontSize: 14 }}>
+                    {formatUang(mSaldo)}
+                  </p>
+                  <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 11 }}>saldo bersih</p>
                 </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", background: saldo >= 0 ? "var(--success-subtle)" : "var(--danger-subtle)", borderRadius: 10, padding: "8px 12px" }}>
-                <span style={{ color: "var(--text-secondary)", fontSize: 13, fontWeight: 500 }}>Saldo Bersih</span>
-                <span style={{ color: saldo >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 800, fontSize: 14 }}>{formatUang(saldo)}</span>
+              {/* Progress bar */}
+              <div style={{
+                height: 4, borderRadius: 2, background: "var(--border)", overflow: "hidden", marginTop: 8,
+              }}>
+                <div style={{
+                  height: "100%", width: `${progressPct}%`, borderRadius: 2,
+                  background: "var(--gradient)", transition: "width 0.3s",
+                }} />
               </div>
-            </Card>
+            </div>
           );
         })}
+      </div>
+    );
+  };
+
+  /* ─── Daily detail modal ─── */
+  const DailyDetail = () => {
+    const tgl = selectedDate;
+    if (!tgl || !data[tgl]) return null;
+    const c = calc(tgl);
+
+    return (
+      <div>
+        {/* Summary */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+          <div style={{
+            background: "var(--success-subtle)", borderRadius: 12, padding: "12px",
+          }}>
+            <p style={{ color: "var(--success)", fontSize: 10, margin: "0 0 4px", fontWeight: 600 }}>Pemasukan</p>
+            <p style={{ color: "var(--success)", fontSize: 16, fontWeight: 800, margin: 0 }}>{formatUang(c.totalMasuk)}</p>
+          </div>
+          <div style={{
+            background: "var(--danger-subtle)", borderRadius: 12, padding: "12px",
+          }}>
+            <p style={{ color: "var(--danger)", fontSize: 10, margin: "0 0 4px", fontWeight: 600 }}>Pengeluaran</p>
+            <p style={{ color: "var(--danger)", fontSize: 16, fontWeight: 800, margin: 0 }}>{formatUang(c.totalKeluar)}</p>
+          </div>
+        </div>
+
+        {/* Uang awal */}
+        <div style={{
+          background: "var(--accent-subtle)", borderRadius: 12, padding: "10px 14px",
+          display: "flex", justifyContent: "space-between", marginBottom: 16,
+        }}>
+          <span style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>Uang Awal</span>
+          <span style={{ color: "var(--accent)", fontWeight: 800, fontSize: 14 }}>{formatUang(c.uang_awal)}</span>
+        </div>
+
+        {/* Transactions */}
+        {c.transaksi.length === 0 ? (
+          <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Tidak ada transaksi</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {c.transaksi.map((t, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                background: "var(--input-bg)", borderRadius: 10,
+              }}>
+                <div style={{
+                  width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                  background: t.type === "masuk" ? "var(--success)" : "var(--danger)",
+                }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+                    {t.type === "masuk" ? "Pemasukan" : (t.kategori || "Pengeluaran")}
+                  </p>
+                  <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
+                    {t.catatan && t.catatan !== "-" ? t.catatan : (t.metode?.toUpperCase() || "")}
+                  </p>
+                </div>
+                <p style={{
+                  margin: 0, fontSize: 13, fontWeight: 800,
+                  color: t.type === "masuk" ? "var(--success)" : "var(--danger)",
+                }}>
+                  {t.type === "masuk" ? "+" : "-"}{formatUang(t.jumlah)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Saldo */}
+        <div style={{
+          marginTop: 16, padding: "12px 14px", borderRadius: 12,
+          background: c.saldoCash >= 0 ? "var(--success-subtle)" : "var(--danger-subtle)",
+          display: "flex", justifyContent: "space-between",
+        }}>
+          <span style={{ color: "var(--text-secondary)", fontSize: 13, fontWeight: 600 }}>Saldo Akhir</span>
+          <span style={{ color: c.saldoCash >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 800, fontSize: 15 }}>
+            {formatUang(c.saldoCash)}
+          </span>
+        </div>
       </div>
     );
   };
@@ -327,15 +398,77 @@ export default function LaporanScreen({
         </button>
       </div>
 
-      {/* ─── Chart ─── */}
-      <div style={{ padding: "0 20px" }}>
-        <SimpleChart data={data} today={today} />
+      {/* ─── Search ─── */}
+      <div style={{ padding: "0 20px 12px" }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "10px 14px", background: "var(--input-bg)",
+          border: "1px solid var(--input-border)", borderRadius: 12,
+        }}>
+          <Icon name="search" size={16} color="var(--text-muted)" />
+          <input
+            type="text"
+            placeholder="Cari kategori, catatan, metode..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              flex: 1, border: "none", background: "none", outline: "none",
+              fontSize: 13, color: "var(--text)", fontFamily: "'Inter', sans-serif",
+            }}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} style={{
+              border: "none", background: "none", cursor: "pointer", padding: 2,
+              display: "flex", alignItems: "center",
+            }}>
+              <Icon name="close" size={14} color="var(--text-muted)" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ─── Tabs ─── */}
-      <div style={{ padding: "0 20px", marginBottom: 16 }}>
+      {/* ─── Summary Cards ─── */}
+      {dates.length > 0 && (
+        <div style={{ padding: "0 20px 16px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+          <div style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 12, padding: "10px 12px", textAlign: "center",
+          }}>
+            <p style={{ margin: "0 0 2px", fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Masuk</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "var(--success)" }}>{formatUang(totalMasuk)}</p>
+          </div>
+          <div style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 12, padding: "10px 12px", textAlign: "center",
+          }}>
+            <p style={{ margin: "0 0 2px", fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Keluar</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "var(--danger)" }}>{formatUang(totalKeluar)}</p>
+          </div>
+          <div style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 12, padding: "10px 12px", textAlign: "center",
+          }}>
+            <p style={{ margin: "0 0 2px", fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Saldo</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: saldoBersih >= 0 ? "var(--accent)" : "var(--danger)" }}>
+              {formatUang(saldoBersih)}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Chart ─── */}
+      <div style={{ padding: "0 20px" }}>
+        <AnalyticsChart data={data} today={today} />
+      </div>
+
+      {/* ─── Filter Tabs ─── */}
+      <div style={{ padding: "0 20px 16px" }}>
         <div style={{ display: "flex", gap: 6 }}>
-          {tabs.map(t => (
+          {[
+            { key: "harian", label: "Harian" },
+            { key: "mingguan", label: "Mingguan" },
+            { key: "bulanan", label: "Bulanan" },
+          ].map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
               padding: "7px 14px", borderRadius: 20,
               border: `1.5px solid ${activeTab === t.key ? "var(--accent)" : "var(--border)"}`,
@@ -353,31 +486,44 @@ export default function LaporanScreen({
       {/* ─── Content ─── */}
       <div style={{ padding: "0 20px" }}>
         {activeTab === "harian" && (
-          dates.length === 0 ? (
+          filteredDates.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
-              <p style={{ margin: "0 0 4px", fontSize: 15 }}>Belum ada data</p>
-              <p style={{ margin: 0, fontSize: 13 }}>Mulai catat transaksi dari Beranda</p>
+              <p style={{ margin: "0 0 4px", fontSize: 15 }}>
+                {searchQuery ? "Tidak ditemukan" : "Belum ada data"}
+              </p>
+              <p style={{ margin: 0, fontSize: 13 }}>
+                {searchQuery ? "Coba kata kunci lain" : "Mulai catat transaksi dari Beranda"}
+              </p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {dates.map(tgl => {
+              {filteredDates.map(tgl => {
                 const c = calc(tgl);
                 return (
                   <button key={tgl} onClick={() => { setSelectedDate(tgl); setModal("laporanHarian"); }} style={{
                     background: "var(--surface)", border: "1px solid var(--border)",
                     borderRadius: 14, padding: "14px 16px", cursor: "pointer", textAlign: "left",
                     display: "flex", justifyContent: "space-between", alignItems: "center",
+                    transition: "all 0.15s",
                   }}>
                     <div>
-                      <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 14, fontFamily: "'Inter', sans-serif", color: "var(--text)" }}>
-                        {tgl === today ? "Hari Ini" : new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "short" })}
-                        {tgl === today && <Badge color="var(--accent)" style={{ marginLeft: 6 }}>Hari Ini</Badge>}
+                      <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 14, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
+                        {tgl === today ? "Hari Ini" : new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
                       </p>
-                      <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 12 }}>{c.transaksi?.length ?? 0} transaksi</p>
+                      <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 12 }}>
+                        {c.transaksi?.length ?? 0} transaksi
+                      </p>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <p style={{ margin: "0 0 2px", color: "var(--success)", fontWeight: 700, fontSize: 13 }}>+{formatUang(c.totalMasuk ?? 0)}</p>
-                      <p style={{ margin: 0, color: "var(--danger)", fontSize: 12 }}>-{formatUang(c.totalKeluar ?? 0)}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ textAlign: "right" }}>
+                        <p style={{ margin: "0 0 1px", color: "var(--success)", fontWeight: 700, fontSize: 12 }}>
+                          +{formatUang(c.totalMasuk ?? 0)}
+                        </p>
+                        <p style={{ margin: 0, color: "var(--danger)", fontSize: 11 }}>
+                          -{formatUang(c.totalKeluar ?? 0)}
+                        </p>
+                      </div>
+                      <Icon name="chevronRight" size={16} color="var(--text-muted)" />
                     </div>
                   </button>
                 );
@@ -391,9 +537,31 @@ export default function LaporanScreen({
       </div>
 
       {/* ─── Daily Detail Modal ─── */}
-      <Modal show={modalOpen === "laporanHarian"} onClose={closeModal} title={`Detail — ${selectedDate}`}>
-        <LaporanHarianContent data={data} selectedDate={selectedDate} calc={calc} />
-      </Modal>
+      {modalOpen === "laporanHarian" && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000,
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+        }} onClick={closeModal}>
+          <div style={{
+            background: "var(--bg)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 440,
+            maxHeight: "80vh", overflow: "auto", padding: "20px",
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
+                Detail — {selectedDate === today ? "Hari Ini" : new Date(selectedDate + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}
+              </h3>
+              <button onClick={closeModal} style={{
+                width: 32, height: 32, borderRadius: 10, border: "none",
+                background: "var(--surface)", cursor: "pointer", display: "flex",
+                alignItems: "center", justifyContent: "center",
+              }}>
+                <Icon name="close" size={16} color="var(--text-muted)" />
+              </button>
+            </div>
+            <DailyDetail />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
