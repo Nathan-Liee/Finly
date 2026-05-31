@@ -31,7 +31,7 @@
 ## 🚀 Live Demo
 
 Coba aplikasinya langsung di sini:
-👉 **[kas-app-mauve.vercel.app](https://kas-app-mauve.vercel.app)**
+👉 **[finly-app-mauve.vercel.app](https://finly-app-mauve.vercel.app)**
 
 ## 🛠️ Tech Stack
 
