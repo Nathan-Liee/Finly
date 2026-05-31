@@ -846,7 +846,7 @@ export default function PengaturanScreen({
         />
         <Divider />
         <SettingRow
-          icon="message" iconColor="var(--info)"
+          icon="messageSquare" iconColor="var(--info)"
           title="Keluhan & Masukan"
           subtitle="Kirim laporan bug, keluhan, atau saran fitur untuk pengembangan Finly"
           action={() => { setSettingsView("feedback-form"); setFeedbackSubmitted(false); setFeedbackMsg(""); }}
