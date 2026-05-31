@@ -31,7 +31,7 @@
 ## 🚀 Live Demo
 
 Coba aplikasinya langsung di sini:
-👉 **[finly-app-mauve.vercel.app](https://finly-app-mauve.vercel.app)**
+👉 **[finly-mauve.vercel.app](https://finly-mauve.vercel.app)
 
 ## 🛠️ Tech Stack
 
