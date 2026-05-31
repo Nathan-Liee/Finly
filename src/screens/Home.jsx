@@ -5,6 +5,63 @@ import { formatHari, formatUang } from "../utils/format";
 import { getDisplayName } from "../utils/storage";
 import TransaksiRow from "../components/TransaksiRow";
 
+/* ─── Aggregate Analytics Helper ─── */
+function calcAggregate(data) {
+  if (!data || typeof data !== "object") {
+    return { totalMasuk: 0, totalKeluar: 0, saldoBersih: 0, hariAktif: 0, rataMasuk: 0, rataKeluar: 0, kategoriTerbesar: null, kategoriTerbesarJumlah: 0, metodeDominan: null, cashTotal: 0, qrisTotal: 0 };
+  }
+
+  let totalMasuk = 0;
+  let totalKeluar = 0;
+  let hariAktif = 0;
+  const kategoriMap = {};
+  let cashTotal = 0;
+  let qrisTotal = 0;
+
+  Object.keys(data).forEach(tgl => {
+    const dayData = data[tgl];
+    const transaksi = dayData?.transaksi ?? [];
+    if (transaksi.length === 0 && !dayData?.uang_awal) return;
+
+    hariAktif++;
+    transaksi.forEach(t => {
+      if (t.type === "masuk") {
+        totalMasuk += t.jumlah ?? 0;
+        const metode = (t.metode || "").toLowerCase();
+        if (metode === "cash") cashTotal += t.jumlah ?? 0;
+        else if (metode === "qris") qrisTotal += t.jumlah ?? 0;
+      } else {
+        totalKeluar += t.jumlah ?? 0;
+        if (t.kategori) {
+          kategoriMap[t.kategori] = (kategoriMap[t.kategori] || 0) + (t.jumlah ?? 0);
+        }
+        const metode = (t.metode || "").toLowerCase();
+        if (metode === "cash") cashTotal += t.jumlah ?? 0;
+        else if (metode === "qris") qrisTotal += t.jumlah ?? 0;
+      }
+    });
+  });
+
+  const saldoBersih = totalMasuk - totalKeluar;
+  const rataMasuk = hariAktif > 0 ? Math.round(totalMasuk / hariAktif) : 0;
+  const rataKeluar = hariAktif > 0 ? Math.round(totalKeluar / hariAktif) : 0;
+
+  // Kategori pengeluaran terbesar
+  let kategoriTerbesar = null;
+  let kategoriTerbesarJumlah = 0;
+  Object.entries(kategoriMap).forEach(([k, v]) => {
+    if (v > kategoriTerbesarJumlah) {
+      kategoriTerbesar = k;
+      kategoriTerbesarJumlah = v;
+    }
+  });
+
+  // Metode dominan
+  const metodeDominan = cashTotal >= qrisTotal ? "Cash" : "QRIS";
+
+  return { totalMasuk, totalKeluar, saldoBersih, hariAktif, rataMasuk, rataKeluar, kategoriTerbesar, kategoriTerbesarJumlah, metodeDominan, cashTotal, qrisTotal };
+}
+
 /* ─── Smart Daily Report ─── */
 function SmartDailyReport({ todayCalc, today }) {
   const { totalMasuk, totalKeluar, saldoCash, transaksi, kategoriMap } = todayCalc;
@@ -161,6 +218,68 @@ function MiniGrafik({ data, today }) {
   );
 }
 
+/* ─── Ringkasan Semua Waktu ─── */
+function RingkasanSemuaWaktu({ data }) {
+  const agg = calcAggregate(data);
+
+  if (agg.hariAktif === 0) return null;
+
+  return (
+    <Card style={{ marginBottom: 20, border: "1px solid rgba(245,158,11,0.2)", background: "rgba(245,158,11,0.04)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <Icon name="chart" size={18} color="#F59E0B" />
+        <p style={{ color: "#F59E0B", fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", margin: 0 }}>
+          Ringkasan Semua Waktu
+        </p>
+      </div>
+
+      {/* Ringkasan utama */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+        <div style={{ background: "rgba(16,185,129,0.1)", borderRadius: 10, padding: "10px 12px" }}>
+          <p style={{ color: "#10B98199", fontSize: 10, margin: "0 0 4px", fontWeight: 600 }}>Total Masuk</p>
+          <p style={{ color: "#10B981", fontSize: 12, fontWeight: 700, margin: 0 }}>{formatUang(agg.totalMasuk)}</p>
+        </div>
+        <div style={{ background: "rgba(239,68,68,0.1)", borderRadius: 10, padding: "10px 12px" }}>
+          <p style={{ color: "#EF444499", fontSize: 10, margin: "0 0 4px", fontWeight: 600 }}>Total Keluar</p>
+          <p style={{ color: "#EF4444", fontSize: 12, fontWeight: 700, margin: 0 }}>{formatUang(agg.totalKeluar)}</p>
+        </div>
+        <div style={{ background: `rgba(${agg.saldoBersih >= 0 ? "16,185,129" : "239,68,68"},0.1)`, borderRadius: 10, padding: "10px 12px" }}>
+          <p style={{ color: `${agg.saldoBersih >= 0 ? "#10B98199" : "#EF444499"}`, fontSize: 10, margin: "0 0 4px", fontWeight: 600 }}>Saldo Bersih</p>
+          <p style={{ color: agg.saldoBersih >= 0 ? "#10B981" : "#EF4444", fontSize: 12, fontWeight: 700, margin: 0 }}>{formatUang(agg.saldoBersih)}</p>
+        </div>
+      </div>
+
+      {/* Statistik */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+        <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 12px" }}>
+          <p style={{ color: "#8888aa", fontSize: 10, margin: "0 0 2px" }}>Hari Aktif</p>
+          <p style={{ color: "#fff", fontSize: 13, fontWeight: 700, margin: 0 }}>{agg.hariAktif} hari</p>
+        </div>
+        <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 12px" }}>
+          <p style={{ color: "#8888aa", fontSize: 10, margin: "0 0 2px" }}>Metode Dominan</p>
+          <p style={{ color: "#fff", fontSize: 13, fontWeight: 700, margin: 0 }}>{agg.metodeDominan}</p>
+        </div>
+        <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 12px" }}>
+          <p style={{ color: "#8888aa", fontSize: 10, margin: "0 0 2px" }}>Rata-rata Masuk/Hari</p>
+          <p style={{ color: "#10B981", fontSize: 13, fontWeight: 700, margin: 0 }}>{formatUang(agg.rataMasuk)}</p>
+        </div>
+        <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 12px" }}>
+          <p style={{ color: "#8888aa", fontSize: 10, margin: "0 0 2px" }}>Rata-rata Keluar/Hari</p>
+          <p style={{ color: "#EF4444", fontSize: 13, fontWeight: 700, margin: 0 }}>{formatUang(agg.rataKeluar)}</p>
+        </div>
+      </div>
+
+      {/* Kategori terbesar */}
+      {agg.kategoriTerbesar && (
+        <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 12px" }}>
+          <p style={{ color: "#8888aa", fontSize: 10, margin: "0 0 2px" }}>Kategori Pengeluaran Terbesar</p>
+          <p style={{ color: "#EF4444", fontSize: 13, fontWeight: 700, margin: 0 }}>{agg.kategoriTerbesar} ({formatUang(agg.kategoriTerbesarJumlah)})</p>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user }) {
   return (
     <div style={{ paddingBottom: 100 }}>
@@ -216,7 +335,10 @@ export default function HomeScreen({ data, today, todayCalc, setModal, setTab, p
           ))}
         </div>
 
-        {/* Quick Actions */}
+        {/* Ringkasan Semua Waktu */}
+      <RingkasanSemuaWaktu data={data} />
+
+      {/* Quick Actions */}
         <p style={{ color: "#6366F1", fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>
           Aksi Cepat
         </p>
