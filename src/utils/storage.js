@@ -27,11 +27,13 @@ export async function loadData() {
     console.warn("[loadData] IndexedDB transaksi error:", err);
   }
 
-  // Jika lokal kosong dan user login, coba tarik dari Supabase
+  // Jika user login dan online: fetch dari Supabase (authoritative source)
+  // Fallback ke IndexedDB hanya jika Supabase gagal atau offline
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user && navigator.onLine && kasHarian.length === 0) {
+
+    if (user && navigator.onLine) {
+      // Selalu fetch dari Supabase saat online — cloud adalah source of truth
       const { data: kasHarianDb, error: errKas } = await supabase
         .from('uang_awal')
         .select('*')
@@ -44,14 +46,30 @@ export async function loadData() {
         .order('urutan', { ascending: true });
 
       if (!errKas && !errTrans) {
+        // Supabase sukses — gunakan sebagai authoritative source
         kasHarian = kasHarianDb || [];
         transaksi = transaksiDb || [];
-        // Simpan hasil tarikan ke lokal
-        try { await saveAllToLocal(kasHarian, transaksi); } catch { /* skip */ }
+        // Update cache IndexedDB agar sinkron dengan Supabase
+        try { await saveAllToLocal(kasHarian, transaksi); } catch (e) {
+          console.warn('[loadData] Gagal update IndexedDB cache:', e);
+        }
+      } else {
+        // Supabase gagal — fallback ke IndexedDB
+        console.warn('[loadData] Supabase fetch gagal, fallback ke IndexedDB', { errKas, errTrans });
+        kasHarian = await getUangAwalLocal() || [];
+        transaksi = await getTransaksiLocal() || [];
       }
     }
+    // Jika offline: tetap pakai IndexedDB yang sudah dibaca di awal
   } catch (err) {
-    console.warn("[loadData] Supabase check failed, using local data", err);
+    console.warn('[loadData] Supabase check failed, fallback ke IndexedDB', err);
+    // Pastikan IndexedDB terisi jika belum
+    if (kasHarian.length === 0) {
+      try { kasHarian = await getUangAwalLocal() || []; } catch { /* skip */ }
+    }
+    if (transaksi.length === 0) {
+      try { transaksi = await getTransaksiLocal() || []; } catch { /* skip */ }
+    }
   }
 
   const result = {};
@@ -74,7 +92,10 @@ export async function loadData() {
 
 export async function saveHarian(tanggal, uang_awal) {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) {
+    console.warn('[saveHarian] No authenticated user — cannot save uang_awal');
+    throw new Error('User tidak terautentikasi');
+  }
 
   // Manual check and update to avoid upsert unique constraint issues
   const { data: existing, error: checkError } = await supabase
