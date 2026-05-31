@@ -38,9 +38,12 @@ export const saveTransaksiLocal = async (tanggal, transaksi) => {
       transaksi.forEach(t => {
         store.add({ ...t, tanggal, synced: false });
       });
-      resolve();
     };
     request.onerror = () => reject(request.error);
+    
+    // Wait for transaction to actually complete (all deletes + adds done)
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 };
 

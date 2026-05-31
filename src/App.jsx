@@ -199,15 +199,20 @@ export default function App() {
     if (!data[today]) return showToast("Setup uang awal dulu!", "error");
     setIsSubmitting(true);
     try {
+      // Compute new transaction array ONCE to avoid stale closure issues
+      const prevTx = data[today]?.transaksi ?? [];
+      const newTx = { type: "masuk", jumlah: n, metode: formMetode };
+      const updatedTx = [...prevTx, newTx];
+
       setData(prev => {
         const d = { ...prev };
-        if (!d[today].transaksi) d[today].transaksi = [];
-        d[today].transaksi.push({ type: "masuk", jumlah: n, metode: formMetode });
+        if (!d[today]) d[today] = { uang_awal: 0, transaksi: [] };
+        d[today].transaksi = updatedTx;
         return d;
       });
-      await saveTransaksiLocal(today, [...(data[today]?.transaksi ?? []), { type: "masuk", jumlah: n, metode: formMetode }]);
-      if (isOnline) { try { await saveTransaksi(today, [...(data[today]?.transaksi ?? []), { type: "masuk", jumlah: n, metode: formMetode }]); } catch { /* offline */ } }
-      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: [...(data[today]?.transaksi ?? []), { type: "masuk", jumlah: n, metode: formMetode }] }); }
+      await saveTransaksiLocal(today, updatedTx);
+      if (isOnline) { try { await saveTransaksi(today, updatedTx); } catch { /* offline */ } }
+      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: updatedTx }); }
       closeModal();
       showToast("Pemasukan ditambahkan!");
     } catch { showToast("Gagal menyimpan!", "error"); }
@@ -221,16 +226,20 @@ export default function App() {
     if (!data[today]) return showToast("Setup uang awal dulu!", "error");
     setIsSubmitting(true);
     try {
+      // Compute new transaction array ONCE to avoid stale closure issues
+      const prevTx = data[today]?.transaksi ?? [];
       const newTx = { type: "keluar", jumlah: n, kategori: formKategori || "Lainnya", catatan: formCatatan || "-" };
+      const updatedTx = [...prevTx, newTx];
+
       setData(prev => {
         const d = { ...prev };
-        if (!d[today].transaksi) d[today].transaksi = [];
-        d[today].transaksi.push(newTx);
+        if (!d[today]) d[today] = { uang_awal: 0, transaksi: [] };
+        d[today].transaksi = updatedTx;
         return d;
       });
-      await saveTransaksiLocal(today, [...(data[today]?.transaksi ?? []), newTx]);
-      if (isOnline) { try { await saveTransaksi(today, [...(data[today]?.transaksi ?? []), newTx]); } catch { /* offline */ } }
-      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: [...(data[today]?.transaksi ?? []), newTx] }); }
+      await saveTransaksiLocal(today, updatedTx);
+      if (isOnline) { try { await saveTransaksi(today, updatedTx); } catch { /* offline */ } }
+      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: updatedTx }); }
       closeModal();
       showToast("Pengeluaran ditambahkan!");
     } catch { showToast("Gagal menyimpan!", "error"); }
@@ -243,11 +252,12 @@ export default function App() {
     try {
       const d = { ...data };
       if (!d[today]?.transaksi) return closeModal();
-      d[today].transaksi.splice(hapusIdx, 1);
+      const updatedTx = d[today].transaksi.filter((_, i) => i !== hapusIdx);
+      d[today].transaksi = updatedTx;
       setData({ ...d });
-      await saveTransaksiLocal(today, d[today].transaksi);
-      if (isOnline) { try { await saveTransaksi(today, d[today].transaksi); } catch { /* offline */ } }
-      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: d[today].transaksi }); }
+      await saveTransaksiLocal(today, updatedTx);
+      if (isOnline) { try { await saveTransaksi(today, updatedTx); } catch { /* offline */ } }
+      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: updatedTx }); }
       closeModal();
       showToast("Transaksi dihapus!", "info");
     } catch { showToast("Gagal menghapus!", "error"); }
@@ -282,14 +292,16 @@ export default function App() {
       const d = { ...data };
       const t = d[today]?.transaksi?.[editIdx];
       if (!t) return closeModal();
-      d[today].transaksi[editIdx] = {
-        ...t, jumlah: n,
-        ...(t.type === "masuk" ? { metode: formEditMetode } : { kategori: formEditKategori || "Lainnya", catatan: formEditCatatan || "-" }),
-      };
+      const updatedTx = d[today].transaksi.map((item, i) =>
+        i === editIdx
+          ? { ...item, jumlah: n, ...(t.type === "masuk" ? { metode: formEditMetode } : { kategori: formEditKategori || "Lainnya", catatan: formEditCatatan || "-" }) }
+          : item
+      );
+      d[today].transaksi = updatedTx;
       setData({ ...d });
-      await saveTransaksiLocal(today, d[today].transaksi);
-      if (isOnline) { try { await saveTransaksi(today, d[today].transaksi); } catch { /* offline */ } }
-      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: d[today].transaksi }); }
+      await saveTransaksiLocal(today, updatedTx);
+      if (isOnline) { try { await saveTransaksi(today, updatedTx); } catch { /* offline */ } }
+      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: updatedTx }); }
       closeModal();
       showToast("Transaksi diperbarui!");
     } catch { showToast("Gagal memperbarui!", "error"); }

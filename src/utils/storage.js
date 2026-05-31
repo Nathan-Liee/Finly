@@ -95,12 +95,17 @@ export async function saveTransaksi(tanggal, transaksiList) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  // Hapus yang lama
-  await supabase
+  // Hapus yang lama — must succeed to avoid duplicates
+  const { error: deleteError } = await supabase
     .from('transaksi')
     .delete()
     .eq('tanggal', tanggal)
     .eq('user_id', user.id);
+
+  if (deleteError) {
+    console.error('Gagal hapus transaksi lama:', deleteError.message);
+    throw deleteError;
+  }
 
   // Insert baru hanya kalau ada isinya
   if (transaksiList.length === 0) return;
