@@ -1,170 +1,176 @@
-# Kasapp
+# Kasapp 💰
 
-Aplikasi kas online sederhana untuk membantu bisnis keluarga, toko kecil, UMKM mikro, dan penggunaan pribadi dalam mencatat pemasukan, pengeluaran, saldo, dan laporan harian — tanpa spreadsheet.
+Manajemen kas harian yang **sederhana, cepat, dan modern** — untuk bisnis keluarga, toko kecil, UMKM mikro, dan penggunaan pribadi. Catat pemasukan, pengeluaran, saldo, dan laporan harian tanpa spreadsheet.
 
 ---
 
 ## Preview
 
+### ☀️ Light Mode
+
 <p align="center">
-<img src="./assets/Dashboard.png" width="250">
-<img src="./assets/Transaction.png" width="250">
-<img src="./assets/Report.png" width="250">
+  <img src="./assets/screenshots/home-light.png" width="250" alt="Home Light">
+  &nbsp;&nbsp;
+  <img src="./assets/screenshots/report-light.png" width="250" alt="Report Light">
+  &nbsp;&nbsp;
+  <img src="./assets/screenshots/settings-light.png" width="250" alt="Settings Light">
 </p>
+
+### 🌙 Dark Mode
+
+<p align="center">
+  <img src="./assets/screenshots/home-dark.png" width="250" alt="Home Dark">
+  &nbsp;&nbsp;
+  <img src="./assets/screenshots/report-dark.png" width="250" alt="Report Dark">
+  &nbsp;&nbsp;
+  <img src="./assets/screenshots/settings-dark.png" width="250" alt="Settings Dark">
+</p>
+
+> 📸 Ganti screenshot di `assets/screenshots/` dengan foto asli dari dev browser / HP kamu.
 
 **Live Demo:** https://kas-app-mauve.vercel.app/
 
 ---
 
-## Features
+## ✨ Fitur
 
-- Multi-user authentication (email + password)
-- Email confirmation flow via link (bukan OTP kode angka)
-- Record income transactions (Cash & QRIS)
-- Record expense transactions with categorization
-- Initial balance (uang awal) management per day
-- Daily, weekly, and monthly financial reports
-- Smart daily insights & mini bar chart on dashboard
-- User-based secure database access using Row Level Security (RLS)
-- Responsive web interface
-- Android build support using Capacitor
-
----
-
-## Tech Stack
-
-**Frontend**
-- React
-- Vite
-
-**Backend & Database**
-- Supabase
-- PostgreSQL
-- Supabase Auth
-- Row Level Security (RLS)
-
-**Deployment**
-- Vercel
-
-**Mobile**
-- Capacitor
-- Android APK support
-
-**Version Control**
-- Git
-- GitHub
+- 🔐 **Multi-user auth** — email + password, konfirmasi via link
+- 💵 **Catat pemasukan** — metode Cash & QRIS
+- 📉 **Catat pengeluaran** — dengan kategori otomatis
+- 🏦 **Uang awal** — kelola saldo awal per hari
+- 📊 **Laporan** — harian, mingguan, bulanan + export CSV
+- 📈 **Chart 7 hari** — visual trend pemasukan/pengeluaran
+- 🌙 **Dark Mode** — toggle di Pengaturan, tersimpan otomatis
+- 🎨 **UI modern** — font Inter, spacing konsisten, micro-interactions
+- 📱 **Responsive** — works di desktop, tablet, mobile
+- 🔒 **RLS** — setiap user hanya bisa akses data sendiri
+- 📲 **Capacitor** — support build Android APK
 
 ---
 
-## Architecture
+## 🛠️ Tech Stack
+
+| Layer | Teknologi |
+|-------|-----------|
+| **Frontend** | React 19, Vite 8 |
+| **Styling** | CSS Custom Properties, Design System |
+| **Font** | Inter (Google Fonts) |
+| **Backend** | Supabase (Auth + PostgreSQL) |
+| **Security** | Row Level Security (RLS) |
+| **Deployment** | Vercel |
+| **Mobile** | Capacitor (Android APK) |
+
+---
+
+## 🏗️ Architecture
 
 ```
 User
   ↓
-React Frontend (Vite)
+React Frontend (Vite + Inter Font)
   ↓
 Supabase Client (@supabase/supabase-js)
   ↓
 Supabase API
   ↓
-PostgreSQL Database
+PostgreSQL Database (RLS Protected)
 ```
 
-Row Level Security (RLS) aktif pada setiap tabel, memastikan setiap user hanya bisa membaca, menulis, dan mengelola data miliknya sendiri. Tidak ada user yang bisa mengakses data user lain.
-
 ---
 
-## Database Design
-
-Tabel utama yang digunakan:
-
-| Tabel | Deskripsi |
-|-------|-----------|
-| `profiles` | Menyimpan data profil user (username, email). Terhubung ke Supabase Auth via user ID. |
-| `transaksi` | Menyimpan semua record pemasukan dan pengeluaran per user. |
-| `uang_awal` | Menyimpan saldo awal (cash) per hari per user. |
-
-Semua tabel menggunakan kolom `user_id` yang merujuk ke `auth.users.id` dan dilindungi oleh RLS policies.
-
----
-
-## Installation
+## 📦 Installation
 
 ```bash
-git clone https://github.com/Nathan-Liee/kas-toko.git
-cd kas-toko
+git clone https://github.com/Nathan-Liee/kas-app.git
+cd kas-app
 npm install
 npm run dev
 ```
 
-Aplikasi akan berjalan di `http://localhost:5173`.
+Aplikasi berjalan di `http://localhost:5173`.
 
 ---
 
-## Environment Variables
+## 🔑 Environment Variables
 
-Buat file `.env` atau `.env.local` di root project:
+Buat file `.env` di root project:
 
 ```env
 VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_publishable_or_anon_key
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-> **Warning:** Do **NOT** expose Supabase secret key or service role key in the frontend. Hanya gunakan publishable/anon key di sisi client.
+> ⚠️ **Jangan** taruh secret key / service role key di frontend.
 
 ---
 
-## Deployment
+## 🚀 Deployment
 
-Aplikasi dideploy ke Vercel. Pastikan environment variable berikut dipasang di Vercel project settings:
+Deploy ke Vercel dan set environment variable di project settings:
 
 ```
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
 ```
 
-Setiap push ke branch `main` akan otomatis trigger deployment di Vercel.
+Setiap push ke `main` otomatis trigger deploy.
 
 ---
 
-## Roadmap
+## 🗃️ Database
 
-### ✅ Completed
-- Multi-user authentication
-- Email confirmation flow
-- Username / profile display fix
-- Transaction recording (income & expense)
-- Cash and QRIS transaction support
-- Expense categorization
-- Initial balance management
-- Daily, weekly, and monthly reports
-- Smart daily insights
-- Secure database access with RLS
-- Web deployment (Vercel)
-- Android build support (Capacitor)
+| Tabel | Deskripsi |
+|-------|-----------|
+| `profiles` | Data profil user (username, email) |
+| `transaksi` | Record pemasukan & pengeluaran |
+| `uang_awal` | Saldo awal (cash) per hari |
 
-### 🔜 Next
-- Edit and reset transaction
-- Transaction filtering & search
-- Dashboard analytics & charts
-- Data export (CSV / PDF)
-- Offline mode with IndexedDB
-- Auto sync when back online
+Semua tabel pakai `user_id` → `auth.users.id` dan dilindungi RLS.
 
 ---
 
-## Use Case
+## 📋 Roadmap
+
+### ✅ Selesai
+- [x] Multi-user auth + email confirmation
+- [x] Transaksi pemasukan (Cash & QRIS)
+- [x] Transaksi pengeluaran + kategori
+- [x] Uang awal per hari
+- [x] Laporan harian/mingguan/bulanan
+- [x] Export CSV
+- [x] Chart 7 hari
+- [x] UI overhaul (Inter font, CSS variables, design system)
+- [x] Dark mode toggle
+- [x] Navigasi 3 tab (Home, Laporan, Pengaturan)
+- [x] Responsive layout
+- [x] RLS security
+- [x] Vercel deployment
+- [x] Capacitor Android support
+
+### 🔜 Selanjutnya
+- [ ] Edit & hapus transaksi
+- [ ] Filter & search transaksi
+- [ ] Offline mode (IndexedDB) + auto sync
+- [ ] Export PDF
+- [ ] Notifikasi / reminder harian
+
+---
+
+## 🎯 Use Case
 
 Kasapp cocok untuk:
-- 🏪 Family businesses — pencatatan kas harian untuk usaha keluarga
-- 🛒 Small shops — toko kelontong, warung, kios
-- 📦 Micro SMEs — UMKM yang butuh pencatatan sederhana
-- 👤 Personal cash tracking — catatan keuangan pribadi
-- 📋 Simple daily financial recording — alternatif spreadsheet yang lebih praktis
+
+| Pengguna | Contoh |
+|----------|--------|
+| 🏪 Usaha keluarga | Catatan kas harian warung / toko |
+| 🛒 Toko kecil | Kelontong, kios, minimarket |
+| 📦 UMKM mikro | Pencatatan sederhana tanpa akuntansi berat |
+| 👤 Pribadi | Track uang masuk/keluar harian |
+| 📋 Alternatif spreadsheet | Lebih praktis dari Excel/Google Sheets |
 
 ---
 
-## Author
+## 👤 Author
 
-**Nathan Liee**
+**Nathan Liee**  
 GitHub: https://github.com/Nathan-Liee
