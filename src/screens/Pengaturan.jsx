@@ -431,15 +431,22 @@ export default function PengaturanScreen({
         />
       </SettingsCard>
 
-      {/* ═══════════════════════════════════════ */}
-      {/*  TENTANG                                 */}
-      {/* ═══════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════
+       *  TENTANG                                 
+       * ═══════════════════════════════════════ */}
       <SectionHeader title="Tentang" />
       <SettingsCard>
         <SettingRow
           icon="info" iconColor="var(--accent)"
           title="Kasapp" subtitle={`Versi ${version}`}
           badge={dates.length > 0 ? `${dates.length} hari` : null}
+        />
+        <Divider />
+        <SettingRow
+          icon="message" iconColor="var(--info)"
+          title="Keluhan & Saran"
+          subtitle="Punya masukan, menemukan bug, atau ingin menyarankan fitur baru? Kirimkan pesan agar Kasapp bisa terus diperbaiki."
+          action={() => window.location.href = "mailto:xybcaa.454@gmail.com?subject=Keluhan%20dan%20Saran%20Kasapp&body=Halo%20Kasapp%2C%0A%0ASaya%20ingin%20memberikan%20masukan%3A%0A%0A"}
         />
         <Divider />
         <SettingRow
