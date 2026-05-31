@@ -876,7 +876,7 @@ export default function PengaturanScreen({
           <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>
             Gunakan Finly lebih nyaman di Android. Unduh APK resmi melalui GitHub Releases.
           </p>
-          <a href="https://github.com/Nathan-Liee/Finly/releases/download/v1.0.1-android/Finly-v1.0.1-debug.apk"
+          <a href="https://github.com/Nathan-Liee/Finly/releases/download/v1.0.2-android/Finly-v1.0.2-debug.apk"
             target="_blank" rel="noopener noreferrer"
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,

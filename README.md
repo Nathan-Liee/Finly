@@ -15,7 +15,7 @@
 <p align="center">
   <strong>🌐 Live:</strong> <a href="https://finly-mauve.vercel.app">finly-mauve.vercel.app</a>
   ·
-  <strong>📲 Android:</strong> <a href="https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.1-android">Download APK</a>
+  <strong>📲 Android:</strong> <a href="https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.2-android">Download APK</a>
 </p>
 
 ---
@@ -32,7 +32,7 @@
 - 💬 **Keluhan & Masukan** — Kirim bug report atau saran fitur langsung dari aplikasi.
 - 🔒 **Data Aman** — Row Level Security menjaga data setiap user tetap terpisah.
 - 📱 **Responsive** — Nyaman digunakan di desktop maupun mobile.
-- 📲 **Android APK** — Tersedia di [GitHub Releases](https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.1-android).
+- 📲 **Android APK** — Tersedia di [GitHub Releases](https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.2-android).
 
 ## 📸 Preview
 
@@ -44,8 +44,8 @@
 
 APK Android Finly dapat diunduh melalui GitHub Releases:
 
-- [**Download Finly APK**](https://github.com/Nathan-Liee/Finly/releases/download/v1.0.1-android/Finly-v1.0.1-debug.apk) (v1.0.1-debug, 14.85 MB)
-- [View Release Page](https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.1-android)
+- [**Download Finly APK**](https://github.com/Nathan-Liee/Finly/releases/download/v1.0.2-android/Finly-v1.0.2-debug.apk) (v1.0.2-debug, 14.85 MB)
+- [View Release Page](https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.2-android)
 
 ## 💬 Feedback System
 
