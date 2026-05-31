@@ -4,6 +4,7 @@ import Icon from "../components/Icon";
 import { formatUang } from "../utils/format";
 import { updateProfile, updatePassword, getDisplayName } from "../utils/storage";
 import { supabase } from "../utils/supabase";
+import { insertFeedback } from "../utils/supabase-feedback";
 import { toggleTheme } from "../theme";
 
 /* ═══════════════════════════════════════════
@@ -128,7 +129,12 @@ export default function PengaturanScreen({
   const [konfirmPassword, setKonfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [modalFeedback, setModalFeedback] = useState(false);
+  const [feedbackKategori, setFeedbackKategori] = useState("Keluhan");
+  const [feedbackJudul, setFeedbackJudul] = useState("");
+  const [feedbackPesan, setFeedbackPesan] = useState("");
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState("");
 
   /* ─── Theme ─── */
   const [isDark, setIsDark] = useState(() => {
@@ -168,17 +174,29 @@ export default function PengaturanScreen({
     finally { setLoading(false); }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!confirmDelete) return setConfirmDelete(true);
-    setLoading(true);
+  const handleSubmitFeedback = async () => {
+    if (!feedbackJudul.trim()) return setFeedbackMsg("Judul wajib diisi!");
+    if (!feedbackPesan.trim()) return setFeedbackMsg("Pesan wajib diisi!");
+    setFeedbackLoading(true);
     try {
-      await supabase.auth.admin?.deleteUser?.(user.id);
-      await supabase.auth.signOut();
-    } catch {
-      // Fallback: just sign out
-      await supabase.auth.signOut();
+      await insertFeedback({
+        kategori: feedbackKategori,
+        judul: feedbackJudul.trim(),
+        pesan: feedbackPesan.trim(),
+        email: profile?.email || user?.email,
+      });
+      setFeedbackMsg("Masukan berhasil dikirim. Terima kasih!");
+      setTimeout(() => {
+        setModalFeedback(false);
+        setFeedbackJudul("");
+        setFeedbackPesan("");
+        setFeedbackMsg("");
+      }, 2000);
+    } catch (err) {
+      setFeedbackMsg("Gagal mengirim: " + (err.message || "Terjadi kesalahan"));
+    } finally {
+      setFeedbackLoading(false);
     }
-    onLogout();
   };
 
   const handleClearData = () => {
@@ -438,15 +456,15 @@ export default function PengaturanScreen({
       <SettingsCard>
         <SettingRow
           icon="info" iconColor="var(--accent)"
-          title="Kasapp" subtitle={`Versi ${version}`}
+          title="Finly" subtitle={`Versi ${version}`}
           badge={dates.length > 0 ? `${dates.length} hari` : null}
         />
         <Divider />
         <SettingRow
           icon="message" iconColor="var(--info)"
-          title="Keluhan & Saran"
-          subtitle="Punya masukan, menemukan bug, atau ingin menyarankan fitur baru? Kirimkan pesan agar Kasapp bisa terus diperbaiki."
-          action={() => window.location.href = "mailto:xybcaa.454@gmail.com?subject=Keluhan%20dan%20Saran%20Kasapp&body=Halo%20Kasapp%2C%0A%0ASaya%20ingin%20memberikan%20masukan%3A%0A%0A"}
+          title="Keluhan & Masukan"
+          subtitle="Kirim laporan bug, keluhan, atau saran fitur untuk pengembangan Finly"
+          action={() => setModalFeedback(true)}
         />
         <Divider />
         <SettingRow
@@ -459,42 +477,24 @@ export default function PengaturanScreen({
       {/*  LOGOUT / DELETE                         */}
       {/* ═══════════════════════════════════════ */}
       <div style={{ padding: "20px 20px 40px" }}>
-        {!confirmDelete ? (
-          <button onClick={onLogout} style={{
-            width: "100%", padding: "14px", borderRadius: 14,
-            background: "var(--danger-subtle)", border: "1px solid rgba(239,68,68,0.15)",
-            color: "var(--danger)", fontSize: 14, fontWeight: 700,
-            cursor: "pointer", fontFamily: "'Inter', sans-serif",
-          }}>
-            Keluar
-          </button>
-        ) : (
-          <div style={{
-            background: "var(--danger-subtle)", border: "1px solid rgba(239,68,68,0.15)",
-            borderRadius: 14, padding: 16,
-          }}>
-            <p style={{ margin: "0 0 4px", color: "var(--danger)", fontWeight: 700, fontSize: 14 }}>
-              Konfirmasi Keluar?
-            </p>
-            <p style={{ margin: "0 0 12px", color: "var(--text-secondary)", fontSize: 12 }}>
-              Kamu akan kembali ke halaman login.
-            </p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setConfirmDelete(false)} style={{
-                flex: 1, padding: "10px", borderRadius: 10, border: "1px solid var(--border)",
-                background: "var(--surface)", color: "var(--text)", fontWeight: 600,
-                fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
-              }}>Batal</button>
-              <button onClick={onLogout} style={{
-                flex: 1, padding: "10px", borderRadius: 10, border: "none",
-                background: "var(--danger)", color: "#fff", fontWeight: 600,
-                fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
-              }}>Keluar</button>
-            </div>
-          </div>
-        )}
+        <button onClick={onLogout} style={{
+          width: "100%", padding: "14px", borderRadius: 14,
+          background: "var(--danger-subtle)", border: "1px solid rgba(239,68,68,0.15)",
+          color: "var(--danger)", fontSize: 14, fontWeight: 700,
+          cursor: "pointer", fontFamily: "'Inter', sans-serif",
+        }}>
+          Keluar
+        </button>
 
-        <button onClick={handleDeleteAccount} style={{
+        <button onClick={() => {
+            if(window.confirm("Hapus akun permanen? Data tidak bisa dipulihkan.")) {
+                supabase.auth.admin?.deleteUser?.(user.id).then(() => {
+                    supabase.auth.signOut().then(() => onLogout());
+                }).catch(() => {
+                    supabase.auth.signOut().then(() => onLogout());
+                });
+            }
+        }} style={{
           width: "100%", padding: "12px", borderRadius: 12, marginTop: 10,
           background: "none", border: "none", color: "var(--text-muted)",
           fontSize: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif",
@@ -503,6 +503,110 @@ export default function PengaturanScreen({
           Hapus Akun Permanen
         </button>
       </div>
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  MODAL FEEDBACK                          */}
+      {/* ═══════════════════════════════════════ */}
+      {modalFeedback && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.6)", zIndex: 1000,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 20, backdropFilter: "blur(4px)",
+        }}>
+          <div style={{
+            background: "var(--surface)", borderRadius: 24, width: "100%", maxWidth: 400,
+            padding: 24, border: "1px solid var(--border)",
+            boxShadow: "0 20px 25px -5px rgba(0,0,0,0.3)",
+          }}>
+            <h3 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 800, color: "var(--text)" }}>Keluhan & Masukan</h3>
+            <p style={{ margin: "0 0 20px", fontSize: 13, color: "var(--text-muted)" }}>
+              Bantu kami memperbaiki Finly dengan masukan Anda.
+            </p>
+
+            {feedbackMsg && (
+              <div style={{
+                marginBottom: 16, padding: "10px 14px", borderRadius: 10,
+                background: feedbackMsg.includes("berhasil") ? "var(--success-subtle)" : "var(--danger-subtle)",
+                color: feedbackMsg.includes("berhasil") ? "var(--success)" : "var(--danger)",
+                fontSize: 12, fontWeight: 600, textAlign: "center",
+              }}>
+                {feedbackMsg}
+              </div>
+            )}
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>Kategori</label>
+              <select
+                value={feedbackKategori} onChange={(e) => setFeedbackKategori(e.target.value)}
+                style={{
+                  width: "100%", padding: "12px", borderRadius: 12,
+                  border: "1px solid var(--border)", background: "var(--input-bg)",
+                  color: "var(--text)", fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none",
+                }}
+              >
+                <option value="Keluhan">Keluhan</option>
+                <option value="Bug">Bug</option>
+                <option value="Saran Fitur">Saran Fitur</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>Judul</label>
+              <input
+                value={feedbackJudul} onChange={(e) => setFeedbackJudul(e.target.value)}
+                placeholder="Judul singkat"
+                style={{
+                  width: "100%", padding: "12px", borderRadius: 12,
+                  border: "1px solid var(--border)", background: "var(--input-bg)",
+                  color: "var(--text)", fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none",
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>Pesan</label>
+              <textarea
+                value={feedbackPesan} onChange={(e) => setFeedbackPesan(e.target.value)}
+                placeholder="Detail masukan Anda..."
+                rows={4}
+                style={{
+                  width: "100%", padding: "12px", borderRadius: 12,
+                  border: "1px solid var(--border)", background: "var(--input-bg)",
+                  color: "var(--text)", fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none",
+                  resize: "none",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => { setModalFeedback(false); setFeedbackMsg(""); }}
+                style={{
+                  flex: 1, padding: "14px", borderRadius: 14, border: "1px solid var(--border)",
+                  background: "var(--surface)", color: "var(--text)", fontWeight: 700,
+                  fontSize: 14, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSubmitFeedback}
+                disabled={feedbackLoading}
+                style={{
+                  flex: 1, padding: "14px", borderRadius: 14, border: "none",
+                  background: "var(--accent)", color: "#fff", fontWeight: 700,
+                  fontSize: 14, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+                  opacity: feedbackLoading ? 0.7 : 1,
+                }}
+              >
+                {feedbackLoading ? "Mengirim..." : "Kirim"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
