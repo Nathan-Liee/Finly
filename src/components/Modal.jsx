@@ -2,74 +2,68 @@ import Icon from "./Icon";
 
 export default function Modal({ show, onClose, title, children }) {
   if (!show) return null;
+
   return (
     <div
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 1000,
-        background: "rgba(0,0,0,0.55)",
+        background: "var(--color-surface-overlay)",
         backdropFilter: "blur(4px)",
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
-        animation: "fadeIn 0.2s ease",
+        zIndex: 2000,
+        animation: "fadeIn 0.15s ease",
       }}
       onClick={onClose}
     >
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#1A1A2E",
-          borderRadius: "24px 24px 0 0",
           width: "100%",
           maxWidth: 440,
+          background: "var(--surface)",
+          borderRadius: "20px 20px 0 0",
+          padding: "24px 20px 32px",
           maxHeight: "90vh",
-          overflow: "auto",
-          padding: "0 0 32px 0",
-          animation: "slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-          boxShadow: "0 -8px 40px rgba(0,0,0,0.4)",
+          overflowY: "auto",
+          animation: "slideUp 0.25s ease",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "20px 20px 0",
-          }}
-        >
-          <h2
-            style={{
-              color: "#fff",
-              fontSize: 18,
-              fontFamily: "'Sora', sans-serif",
-              fontWeight: 700,
-              margin: 0,
-            }}
-          >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h3 style={{
+            margin: 0,
+            fontSize: 18,
+            fontWeight: 800,
+            color: "var(--text)",
+            fontFamily: "'Inter', sans-serif",
+          }}>
             {title}
-          </h2>
+          </h3>
           <button
             onClick={onClose}
             style={{
-              background: "rgba(255,255,255,0.08)",
+              width: 32,
+              height: 32,
+              borderRadius: 10,
               border: "none",
-              borderRadius: 50,
-              width: 36,
-              height: 36,
+              background: "var(--input-bg)",
+              cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              cursor: "pointer",
-              color: "#aaa",
             }}
           >
-            <Icon name="close" size={16} />
+            <Icon name="close" size={16} color="var(--text-secondary)" />
           </button>
         </div>
-        <div style={{ padding: "16px 20px 0" }}>{children}</div>
+        {children}
       </div>
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+      `}</style>
     </div>
   );
 }

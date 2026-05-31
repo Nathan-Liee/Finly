@@ -1,67 +1,57 @@
-export default function Field({ label, value, onChange, type = "text", placeholder, prefix, onKeyDown }) {
+export default function Field({ label, value, onChange, type = "text", placeholder, prefix, onKeyDown, style }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <label
-        style={{
-          color: "#8888aa",
+    <div style={{ marginBottom: 14, ...style }}>
+      {label && (
+        <label style={{
+          display: "block",
           fontSize: 12,
           fontWeight: 600,
-          letterSpacing: 1,
-          textTransform: "uppercase",
-          display: "block",
+          color: "var(--text-secondary)",
           marginBottom: 6,
-        }}
-      >
-        {label}
-      </label>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          background: "rgba(255,255,255,0.05)",
-          border: "1.5px solid rgba(255,255,255,0.1)",
-          borderRadius: 12,
-          overflow: "hidden",
-        }}
-      >
+          letterSpacing: 0.3,
+          fontFamily: "'Inter', sans-serif",
+        }}>
+          {label}
+        </label>
+      )}
+      <div style={{ position: "relative" }}>
         {prefix && (
-          <span
-            style={{
-              padding: "12px 0 12px 14px",
-              color: "#8888aa",
-              fontWeight: 600,
-              fontSize: 14,
-            }}
-          >
+          <span style={{
+            position: "absolute",
+            left: 14,
+            top: "50%",
+            transform: "translateY(-50%)",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "var(--text-muted)",
+            pointerEvents: "none",
+          }}>
             {prefix}
           </span>
         )}
         <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onKeyDown?.(e);
-          }}
-          onKeyUp={(e) => {
-            if (e.key === 'Enter' || e.keyCode === 13) onKeyDown?.(e);
-          }}
-          onInput={(e) => {
-            if (e.nativeEvent?.inputType === 'insertLineBreak') onKeyDown?.({ key: 'Enter' });
-          }}
-          inputMode={type === "number" ? "numeric" : "text"}
-          enterKeyHint="done"
+          type={type === "number" ? "text" : type}
+          inputMode={type === "number" ? "numeric" : undefined}
+          value={value ?? ""}
+          onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
+          onKeyDown={onKeyDown}
           style={{
-            flex: 1,
-            background: "transparent",
-            border: "none",
-            outline: "none",
-            color: "#fff",
+            width: "100%",
+            padding: prefix ? "12px 14px 12px 42px" : "12px 14px",
+            borderRadius: 12,
+            border: "1.5px solid var(--input-border)",
+            background: "var(--input-bg)",
+            color: "var(--text)",
             fontSize: 15,
-            padding: "12px 14px",
-            fontFamily: "'Sora', sans-serif",
+            fontWeight: 600,
+            fontFamily: "'Inter', sans-serif",
+            outline: "none",
+            transition: "border-color 0.15s ease",
+            boxSizing: "border-box",
           }}
+          onFocus={(e) => { e.target.style.borderColor = "var(--accent)"; }}
+          onBlur={(e) => { e.target.style.borderColor = "var(--input-border)"; }}
         />
       </div>
     </div>

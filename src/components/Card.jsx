@@ -1,12 +1,17 @@
-export default function Card({ children, style: sx }) {
+export default function Card({ children, style, onClick, className }) {
   return (
     <div
+      onClick={onClick}
+      className={className}
       style={{
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 18,
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: 16,
+        boxShadow: "var(--shadow-card)",
         padding: 16,
-        ...sx,
+        transition: "all 0.2s ease",
+        ...(onClick ? { cursor: "pointer" } : {}),
+        ...style,
       }}
     >
       {children}

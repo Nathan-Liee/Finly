@@ -1,40 +1,75 @@
 import Icon from "./Icon";
 
 const variants = {
-  primary: { background: "linear-gradient(135deg,#7C3AED,#4F46E5)", color: "#fff" },
-  danger:  { background: "linear-gradient(135deg,#DC2626,#B91C1C)", color: "#fff" },
-  ghost:   { background: "rgba(255,255,255,0.06)", color: "#ccc", border: "1px solid rgba(255,255,255,0.1)" },
-  success: { background: "linear-gradient(135deg,#059669,#047857)", color: "#fff" },
-  warning: { background: "linear-gradient(135deg,#D97706,#B45309)", color: "#fff" },
+  primary: {
+    base: {
+      background: "var(--gradient)",
+      color: "#fff",
+      border: "none",
+      boxShadow: "0 2px 8px rgba(107, 126, 255, 0.3)",
+    },
+  },
+  ghost: {
+    base: {
+      background: "transparent",
+      color: "var(--text-secondary)",
+      border: "1px solid var(--border)",
+    },
+  },
+  success: {
+    base: {
+      background: "var(--success)",
+      color: "#fff",
+      border: "none",
+      boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)",
+    },
+  },
+  danger: {
+    base: {
+      background: "var(--danger)",
+      color: "#fff",
+      border: "none",
+      boxShadow: "0 2px 8px rgba(239, 68, 68, 0.3)",
+    },
+  },
+  warning: {
+    base: {
+      background: "var(--warning)",
+      color: "#fff",
+      border: "none",
+      boxShadow: "0 2px 8px rgba(245, 158, 11, 0.3)",
+    },
+  },
 };
 
-export default function Btn({ children, onClick, variant = "primary", icon, disabled, style: sx }) {
+export default function Button({ children, onClick, variant = "primary", icon, disabled, style, fullWidth, size = "md" }) {
+  const v = variants[variant] || variants.primary;
+  const padding = size === "sm" ? "8px 14px" : size === "lg" ? "14px 24px" : "11px 20px";
+  const fontSize = size === "sm" ? 12 : size === "lg" ? 16 : 14;
+
   return (
     <button
-      disabled={disabled}
       onClick={onClick}
+      disabled={disabled}
       style={{
-        ...variants[variant],
-        borderRadius: 14,
-        padding: "15px 18px",
-        minHeight: 56,
-        border: "none",
-        cursor: disabled ? "not-allowed" : "pointer",
-        fontSize: 14,
-        fontFamily: "'Sora', sans-serif",
-        fontWeight: 600,
-        display: "flex",
+        ...v.base,
+        padding,
+        borderRadius: 12,
+        fontSize,
+        fontWeight: 700,
+        fontFamily: "'Inter', sans-serif",
+        display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         gap: 8,
-        transition: "all 0.15s",
+        width: fullWidth ? "100%" : undefined,
         opacity: disabled ? 0.5 : 1,
-        width: "100%",
-        letterSpacing: 0.3,
-        ...sx,
+        cursor: disabled ? "not-allowed" : "pointer",
+        transition: "all 0.15s ease",
+        ...style,
       }}
     >
-      {icon && <Icon name={icon} size={16} />}
+      {icon && <Icon name={icon} size={size === "sm" ? 14 : 18} />}
       {children}
     </button>
   );

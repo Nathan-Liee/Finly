@@ -1,0 +1,255 @@
+/* ═══════════════════════════════════════════════
+ *  Design System — CSS Custom Properties
+ *  Synced with src/theme.js tokens
+ *  Toggle via: <html data-theme="dark">
+ * ═══════════════════════════════════════════════ */
+
+/* ── Light theme (default) ──────────────────── */
+:root,
+[data-theme="light"] {
+  /* Surfaces */
+  --color-background: #FAFBFC;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #FFFFFF;
+  --color-surface-overlay: rgba(0, 0, 0, 0.4);
+
+  /* Borders */
+  --color-border: #E5E7EB;
+  --color-border-subtle: #F3F4F6;
+  --color-border-focus: #6B7EFF;
+
+  /* Text */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+  --color-text-inverse: #FFFFFF;
+
+  /* Accent */
+  --color-accent: #6B7EFF;
+  --color-accent-hover: #5A6AE5;
+  --color-accent-subtle: rgba(107, 126, 255, 0.08);
+  --color-accent-border: rgba(107, 126, 255, 0.2);
+
+  /* Semantic */
+  --color-success: #10B981;
+  --color-success-subtle: rgba(16, 185, 129, 0.08);
+  --color-danger: #EF4444;
+  --color-danger-subtle: rgba(239, 68, 68, 0.08);
+  --color-warning: #F59E0B;
+  --color-warning-subtle: rgba(245, 158, 11, 0.08);
+  --color-info: #3B82F6;
+  --color-info-subtle: rgba(59, 130, 246, 0.08);
+
+  /* Components */
+  --color-input-bg: #F9FAFB;
+  --color-input-border: #E5E7EB;
+  --color-navbar-bg: rgba(255, 255, 255, 0.85);
+  --color-navbar-border: #E5E7EB;
+  --color-tab-inactive: #9CA3AF;
+  --gradient-primary: linear-gradient(135deg, #6B7EFF 0%, #4A5AE7 100%);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.06), 0 4px 6px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.06), 0 8px 10px rgba(0, 0, 0, 0.04);
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Roboto Mono', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  --text-2xl: 1.25rem;
+  --text-3xl: 1.5rem;
+  --text-4xl: 1.875rem;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+
+  /* Border radii */
+  --radius-none: 0;
+  --radius-sm: 0.25rem;
+  --radius-base: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+
+  /* ── Shorthand aliases (for components) ─── */
+  --bg: var(--color-background);
+  --surface: var(--color-surface);
+  --surface-elevated: var(--color-surface-elevated);
+  --border: var(--color-border);
+  --border-subtle: var(--color-border-subtle);
+  --text: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --accent: var(--color-accent);
+  --accent-hover: var(--color-accent-hover);
+  --accent-subtle: var(--color-accent-subtle);
+  --accent-border: var(--color-accent-border);
+  --success: var(--color-success);
+  --success-subtle: var(--color-success-subtle);
+  --danger: var(--color-danger);
+  --danger-subtle: var(--color-danger-subtle);
+  --warning: var(--color-warning);
+  --warning-subtle: var(--color-warning-subtle);
+  --info: var(--color-info);
+  --info-subtle: var(--color-info-subtle);
+  --input-bg: var(--color-input-bg);
+  --input-border: var(--color-input-border);
+  --navbar: var(--color-navbar-bg);
+  --navbar-border: var(--color-navbar-border);
+  --tab-inactive: var(--color-tab-inactive);
+  --gradient: var(--gradient-primary);
+  --shadow-card: var(--shadow-sm);
+  --shadow-modal: var(--shadow-lg);
+}
+
+/* ── Dark theme ─────────────────────────────── */
+[data-theme="dark"] {
+  /* Surfaces */
+  --color-background: #0B0D12;
+  --color-surface: #131620;
+  --color-surface-elevated: #1A1E2A;
+  --color-surface-overlay: rgba(0, 0, 0, 0.6);
+
+  /* Borders */
+  --color-border: #232736;
+  --color-border-subtle: #1A1E2A;
+  --color-border-focus: #6B7EFF;
+
+  /* Text */
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #9CA3AF;
+  --color-text-muted: #6B7280;
+  --color-text-inverse: #111827;
+
+  /* Accent */
+  --color-accent: #6B7EFF;
+  --color-accent-hover: #8090FF;
+  --color-accent-subtle: rgba(107, 126, 255, 0.12);
+  --color-accent-border: rgba(107, 126, 255, 0.25);
+
+  /* Semantic */
+  --color-success: #34D399;
+  --color-success-subtle: rgba(52, 211, 153, 0.1);
+  --color-danger: #F87171;
+  --color-danger-subtle: rgba(248, 113, 113, 0.1);
+  --color-warning: #FBBF24;
+  --color-warning-subtle: rgba(251, 191, 36, 0.1);
+  --color-info: #60A5FA;
+  --color-info-subtle: rgba(96, 165, 250, 0.1);
+
+  /* Components */
+  --color-input-bg: rgba(255, 255, 255, 0.04);
+  --color-input-border: #232736;
+  --color-navbar-bg: rgba(11, 13, 18, 0.9);
+  --color-navbar-border: #232736;
+  --color-tab-inactive: #6B7280;
+
+  /* Shadows — darker for dark mode */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3), 0 4px 6px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.3), 0 8px 10px rgba(0, 0, 0, 0.2);
+
+  /* ── Shorthand aliases (dark overrides) ─── */
+  --bg: var(--color-background);
+  --surface: var(--color-surface);
+  --surface-elevated: var(--color-surface-elevated);
+  --border: var(--color-border);
+  --border-subtle: var(--color-border-subtle);
+  --text: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --accent: var(--color-accent);
+  --accent-hover: var(--color-accent-hover);
+  --accent-subtle: var(--color-accent-subtle);
+  --accent-border: var(--color-accent-border);
+  --success: var(--color-success);
+  --success-subtle: var(--color-success-subtle);
+  --danger: var(--color-danger);
+  --danger-subtle: var(--color-danger-subtle);
+  --warning: var(--color-warning);
+  --warning-subtle: var(--color-warning-subtle);
+  --info: var(--color-info);
+  --info-subtle: var(--color-info-subtle);
+  --input-bg: var(--color-input-bg);
+  --input-border: var(--color-input-border);
+  --navbar: var(--color-navbar-bg);
+  --navbar-border: var(--color-navbar-border);
+  --tab-inactive: var(--color-tab-inactive);
+  --gradient: var(--gradient-primary);
+  --shadow-card: var(--shadow-sm);
+  --shadow-modal: var(--shadow-lg);
+}
+
+/* ── OS-level dark mode fallback ────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-background: #0B0D12;
+    --color-surface: #131620;
+    --color-surface-elevated: #1A1E2A;
+    --color-surface-overlay: rgba(0, 0, 0, 0.6);
+    --color-border: #232736;
+    --color-border-subtle: #1A1E2A;
+    --color-text-primary: #F9FAFB;
+    --color-text-secondary: #9CA3AF;
+    --color-text-muted: #6B7280;
+    --color-text-inverse: #111827;
+    --color-accent-hover: #8090FF;
+    --color-accent-subtle: rgba(107, 126, 255, 0.12);
+    --color-accent-border: rgba(107, 126, 255, 0.25);
+    --color-success: #34D399;
+    --color-success-subtle: rgba(52, 211, 153, 0.1);
+    --color-danger: #F87171;
+    --color-danger-subtle: rgba(248, 113, 113, 0.1);
+    --color-warning: #FBBF24;
+    --color-warning-subtle: rgba(251, 191, 36, 0.1);
+    --color-info: #60A5FA;
+    --color-info-subtle: rgba(96, 165, 250, 0.1);
+    --color-input-bg: rgba(255, 255, 255, 0.04);
+    --color-input-border: #232736;
+    --color-navbar-bg: rgba(11, 13, 18, 0.9);
+    --color-navbar-border: #232736;
+    --color-tab-inactive: #6B7280;
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3), 0 4px 6px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.3), 0 8px 10px rgba(0, 0, 0, 0.2);
+  }
+}

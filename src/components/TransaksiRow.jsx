@@ -1,39 +1,115 @@
+import { formatUang } from "../utils/format";
 import Icon from "./Icon";
 
-export default function TransaksiRow({ t, onDelete, onEdit, idx }) {
+export default function TransaksiRow({ t, onEdit, onDelete, showActions = true }) {
+  const isIn = t.type === "masuk";
+
   return (
-    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-      <div style={{ width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: t.type === "masuk" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", flexShrink: 0 }}>
-        <Icon name={t.type === "masuk" ? t.metode === "qris" ? "qris" : "cash" : "minus"} size={18} color={t.type === "masuk" ? "#10B981" : "#EF4444"} />
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      padding: "12px 14px",
+      background: "var(--surface)",
+      border: "1px solid var(--border)",
+      borderRadius: 14,
+      transition: "all 0.15s ease",
+    }}>
+      {/* Icon */}
+      <div style={{
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        background: isIn ? "var(--success-subtle)" : "var(--danger-subtle)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        <Icon
+          name={isIn ? "arrowDown" : "arrowUp"}
+          size={18}
+          color={isIn ? "var(--success)" : "var(--danger)"}
+        />
       </div>
 
+      {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, color: "#ddd", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {t.type === "masuk" ? `Customer (${t.metode?.toUpperCase()})` : t.kategori}
+        <p style={{
+          margin: 0,
+          fontSize: 14,
+          fontWeight: 700,
+          color: "var(--text)",
+          fontFamily: "'Inter', sans-serif",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}>
+          {isIn ? "Pemasukan" : (t.kategori || "Pengeluaran")}
         </p>
-        {t.type === "keluar" && t.catatan !== "-" && (
-          <p style={{ margin: 0, color: "#666688", fontSize: 11 }}>{t.catatan}</p>
-        )}
+        <p style={{
+          margin: "2px 0 0",
+          fontSize: 11,
+          color: "var(--text-muted)",
+          fontFamily: "'Inter', sans-serif",
+        }}>
+          {t.catatan && t.catatan !== "-" ? t.catatan : (t.metode ? t.metode.toUpperCase() : "")}
+        </p>
       </div>
 
-      <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <p style={{ margin: 0, color: t.type === "masuk" ? "#10B981" : "#EF4444", fontWeight: 700, fontSize: 14 }}>
-          {t.type === "masuk" ? "+" : "-"}{`Rp ${Number(t.jumlah).toLocaleString("id-ID")}`}
-        </p>
-      </div>
+      {/* Amount */}
+      <p style={{
+        margin: 0,
+        fontSize: 14,
+        fontWeight: 800,
+        color: isIn ? "var(--success)" : "var(--danger)",
+        fontFamily: "'Inter', sans-serif",
+        whiteSpace: "nowrap",
+        flexShrink: 0,
+      }}>
+        {isIn ? "+" : "-"}{formatUang(t.jumlah)}
+      </p>
 
-      {onEdit && (
-        <button onClick={() => onEdit(idx)}
-          style={{ background: "rgba(99,102,241,0.1)", border: "none", borderRadius: 8, padding: "6px 8px", cursor: "pointer", color: "#6366F1", flexShrink: 0 }}>
-          <Icon name="edit" size={14} />
-        </button>
-      )}
-
-      {onDelete && (
-        <button onClick={() => onDelete(idx)}
-          style={{ background: "rgba(239,68,68,0.1)", border: "none", borderRadius: 8, padding: "6px 8px", cursor: "pointer", color: "#EF4444", flexShrink: 0 }}>
-          <Icon name="trash" size={14} />
-        </button>
+      {/* Actions */}
+      {showActions && (onEdit || onDelete) && (
+        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+          {onEdit && (
+            <button
+              onClick={() => onEdit?.()}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                border: "none",
+                background: "var(--accent-subtle)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon name="edit" size={14} color="var(--accent)" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete?.()}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                border: "none",
+                background: "var(--danger-subtle)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon name="trash" size={14} color="var(--danger)" />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
