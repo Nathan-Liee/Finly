@@ -286,26 +286,31 @@ export default function App() {
     finally { setIsSubmitting(false); }
   };
 
-  const doUbahAwal = async () => {
+  const doUbahAwal = async (overrideValue, overrideTarget) => {
     if (isSubmitting) return;
-    const n = parseInt(cleanNumber(formUangAwal));
+    const targetTanggal = overrideTarget || ubahTarget;
+    if (!targetTanggal) {
+      showToast("Tanggal uang awal tidak valid", "error");
+      return;
+    }
+    const n = overrideValue !== undefined ? overrideValue : parseInt(cleanNumber(formUangAwal));
     if (isNaN(n) || n < 0) return showToast("Angka tidak valid!", "error");
     setIsSubmitting(true);
     try {
       // 1. React state — UI update langsung
       const d = { ...data };
-      if (!d[ubahTarget]) d[ubahTarget] = { uang_awal: 0, transaksi: [] };
-      d[ubahTarget].uang_awal = n;
+      if (!d[targetTanggal]) d[targetTanggal] = { uang_awal: 0, transaksi: [] };
+      d[targetTanggal].uang_awal = n;
       setData({ ...d });
       // 2. IndexedDB — persistent local
-      await saveUangAwalLocal(ubahTarget, n);
+      await saveUangAwalLocal(targetTanggal, n);
       // 3. Supabase — cloud sync
       if (isOnline) {
-        await saveHarian(ubahTarget, n);
+        await saveHarian(targetTanggal, n);
         closeModal();
-        showToast("Uang awal diperbarui!");
+        showToast(overrideValue !== undefined ? "Uang awal berhasil dihapus" : "Uang awal diperbarui!");
       } else {
-        await addToSyncQueue('uang_awal', { tanggal: ubahTarget, uang_awal: n });
+        await addToSyncQueue('uang_awal', { tanggal: targetTanggal, uang_awal: n });
         closeModal();
         showToast("Data tersimpan di perangkat. Akan sync saat online.", "info");
       }
@@ -479,6 +484,7 @@ export default function App() {
               data={data} today={today} dates={dates}
               setUbahTarget={setUbahTarget} setFormUangAwal={setFormUangAwal} setModal={setModal}
               profile={profile} setProfile={setProfile} user={user}
+              onResetUangAwal={async (tanggal) => { await doUbahAwal(0, tanggal); }}
               onLogout={async () => { try { await supabase.auth.signOut(); } catch{} setUser(null); setData({}); setProfile(null); setTab("home"); }}
             />
           </div>

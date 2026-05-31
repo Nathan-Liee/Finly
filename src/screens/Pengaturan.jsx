@@ -120,7 +120,7 @@ function Divider() {
 export default function PengaturanScreen({
   data, today, dates,
   setUbahTarget, setFormUangAwal, setModal,
-  profile, setProfile, user, onLogout
+  profile, setProfile, user, onResetUangAwal, onLogout
 }) {
   /* ─── Profile editing ─── */
   const [editMode, setEditMode] = useState(null); // "username" | "password" | null
@@ -146,6 +146,10 @@ export default function PengaturanScreen({
   const [feedbackStatusFilter, setFeedbackStatusFilter] = useState("Semua");
   const [feedbackLoadingList, setFeedbackLoadingList] = useState(false);
   const [feedbackListMsg, setFeedbackListMsg] = useState("");
+
+  /* ─── Hapus Uang Awal ─── */
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   /* ─── Theme ─── */
   const [isDark, setIsDark] = useState(() => {
@@ -797,17 +801,94 @@ export default function PengaturanScreen({
       {/* ═══════════════════════════════════════ */}
       {/*  UANG AWAL                               */}
       {/* ═══════════════════════════════════════ */}
-      {data[today] && (
+      {data[today] != null && data[today].uang_awal != null ? (
         <>
           <SectionHeader title="Uang Awal" />
           <SettingsCard>
             <SettingRow
               icon="wallet" iconColor="var(--success)"
-              title="Hari Ini" subtitle={formatUang(data[today]?.uang_awal ?? 0)}
-              action={() => { setUbahTarget(today); setFormUangAwal(String(data[today]?.uang_awal ?? "")); setModal("ubahAwal"); }}
+              title="Ubah Uang Awal" subtitle={formatUang(data[today].uang_awal)}
+              action={() => { setUbahTarget(today); setFormUangAwal(String(data[today].uang_awal)); setModal("ubahAwal"); }}
+            />
+            <Divider />
+            <SettingRow
+              icon="trash" iconColor="var(--warning)"
+              title="Hapus Uang Awal" subtitle="Reset saldo awal hari ini ke Rp 0"
+              danger
+              action={() => setShowDeleteConfirm(true)}
             />
           </SettingsCard>
         </>
+      ) : (
+        <>
+          <SectionHeader title="Uang Awal" />
+          <SettingsCard>
+            <SettingRow
+              icon="wallet" iconColor="var(--success)"
+              title="Atur Uang Awal" subtitle="Tetapkan saldo awal untuk memulai pencatatan kas"
+              action={() => { setUbahTarget(today); setFormUangAwal("0"); setModal("ubahAwal"); }}
+            />
+          </SettingsCard>
+        </>
+      )}
+
+      {/* ═══ Konfirmasi Hapus Uang Awal ═══ */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999, padding: 24,
+        }} onClick={() => !deleteLoading && setShowDeleteConfirm(false)}>
+          <div style={{
+            background: "var(--surface)", borderRadius: 16, padding: 24,
+            maxWidth: 340, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>
+              Hapus uang awal hari ini?
+            </h3>
+            <p style={{ margin: "0 0 24px", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, fontFamily: "'Inter', sans-serif" }}>
+              Saldo awal akan direset ke Rp 0. Transaksi hari ini tidak akan dihapus.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                disabled={deleteLoading}
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{
+                  flex: 1, padding: "12px 0", borderRadius: 12, border: "none",
+                  background: "var(--input-bg)", fontSize: 14, fontWeight: 600,
+                  cursor: deleteLoading ? "not-allowed" : "pointer",
+                  opacity: deleteLoading ? 0.5 : 1,
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                Batal
+              </button>
+              <button
+                disabled={deleteLoading}
+                onClick={async () => {
+                  setDeleteLoading(true);
+                  try {
+                    await onResetUangAwal(today);
+                    setShowDeleteConfirm(false);
+                  } catch (err) {
+                    console.error("[Hapus Uang Awal] Error:", err);
+                  } finally {
+                    setDeleteLoading(false);
+                  }
+                }}
+                style={{
+                  flex: 1, padding: "12px 0", borderRadius: 12, border: "none",
+                  background: "var(--danger)", color: "#fff", fontSize: 14, fontWeight: 600,
+                  cursor: deleteLoading ? "not-allowed" : "pointer",
+                  opacity: deleteLoading ? 0.7 : 1,
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {deleteLoading ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ═══════════════════════════════════════ */}
