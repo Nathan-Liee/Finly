@@ -30,8 +30,7 @@
 
 ## 🚀 Live Demo
 
-Coba aplikasinya langsung di sini:
-👉 **[https://finly-mauve.vercel.app](https://finly-mauve.vercel.app)
+Coba aplikasinya langsung di sini: 👉 https://finly-mauve.vercel.app
 
 ## 🛠️ Tech Stack
 
