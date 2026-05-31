@@ -209,26 +209,70 @@ export default function LaporanScreen({
   ];
 
   const exportCSV = () => {
-    const rows = [["Tanggal", "Tipe", "Metode", "Kategori", "Catatan", "Jumlah"]];
+    // Escape CSV field: wrap in quotes if contains comma, quote, or newline
+    const esc = (v) => {
+      const s = String(v ?? "");
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    // Hitung ringkasan dari filtered dates
+    let totalMasuk = 0;
+    let totalKeluar = 0;
+    let totalTransaksi = 0;
+    filteredDates.forEach(tgl => {
+      const c = calc(tgl);
+      totalMasuk += c.totalMasuk ?? 0;
+      totalKeluar += c.totalKeluar ?? 0;
+      totalTransaksi += c.transaksi?.length ?? 0;
+    });
+    const saldoBersih = totalMasuk - totalKeluar;
+
+    // Nama file dinamis
+    let filename;
+    if (filterDari || filterSampai) {
+      const dari = filterDari || "awal";
+      const sampai = filterSampai || "sekarang";
+      filename = `kasapp-laporan-${dari}_sampai_${sampai}.csv`;
+    } else {
+      filename = "kasapp-laporan-semua.csv";
+    }
+
+    // Bangun baris CSV
+    const lines = [];
+    // Header ringkasan
+    lines.push([esc("Aplikasi"), esc("Kas App")].join(","));
+    lines.push([esc("Tanggal Export"), esc(new Date().toLocaleString("id-ID"))].join(","));
+    lines.push([esc("Rentang Laporan"), esc(filterDari || filterSampai ? `${filterDari || "awal"} s/d ${filterSampai || "sekarang"}` : "Semua")].join(","));
+    lines.push([esc("Total Transaksi"), totalTransaksi].join(","));
+    lines.push([esc("Total Pemasukan"), totalMasuk].join(","));
+    lines.push([esc("Total Pengeluaran"), totalKeluar].join(","));
+    lines.push([esc("Saldo Bersih"), saldoBersih].join(","));
+    // Baris kosong pemisah
+    lines.push("");
+    // Header tabel transaksi
+    lines.push([esc("Tanggal"), esc("Tipe"), esc("Metode"), esc("Kategori"), esc("Catatan"), esc("Jumlah")].join(","));
+    // Data transaksi
     filteredDates.forEach(tgl => {
       const c = calc(tgl);
       c.transaksi?.forEach(t => {
-        rows.push([
-          tgl,
-          t.type === "masuk" ? "Pemasukan" : "Pengeluaran",
-          t.metode?.toUpperCase() || "-",
-          t.kategori || "-",
-          t.catatan || "-",
+        lines.push([
+          esc(tgl),
+          esc(t.type === "masuk" ? "Pemasukan" : "Pengeluaran"),
+          esc(t.metode?.toUpperCase() || "-"),
+          esc(t.kategori || "-"),
+          esc(t.catatan || "-"),
           t.jumlah,
-        ]);
+        ].join(","));
       });
     });
-    const csv = rows.map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+
+    // BOM + CSV content
+    const csv = "\uFEFF" + lines.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `kas-toko-${today}.csv`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   };
