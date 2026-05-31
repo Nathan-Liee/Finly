@@ -140,14 +140,24 @@ export default function App() {
         const { getSyncQueue, clearSyncQueue } = await import('./db/index');
         const queue = await getSyncQueue();
         if (!queue?.length) return;
-        let synced = false;
+        let syncedCount = 0;
+        let failedCount = 0;
         for (const item of queue) {
           try {
-            if (item.action === 'transaksi') { await saveTransaksi(item.data.tanggal, item.data.transaksi); synced = true; }
-            else if (item.action === 'uang_awal') { await saveHarian(item.data.tanggal, item.data.uang_awal); synced = true; }
-          } catch { /* skip */ }
+            if (item.action === 'transaksi') { await saveTransaksi(item.data.tanggal, item.data.transaksi); syncedCount++; }
+            else if (item.action === 'uang_awal') { await saveHarian(item.data.tanggal, item.data.uang_awal); syncedCount++; }
+          } catch (err) {
+            console.error(`[Sync] Gagal sync ${item.action}:`, err.message);
+            failedCount++;
+          }
         }
-        if (synced) { await clearSyncQueue(); showToast("Data tersinkron!", "success"); }
+        // Only clear queue if ALL items succeeded
+        if (syncedCount > 0 && failedCount === 0) {
+          await clearSyncQueue();
+          showToast(`${syncedCount} data tersinkron!`, "success");
+        } else if (failedCount > 0) {
+          showToast(`${syncedCount} sync berhasil, ${failedCount} gagal. Akan dicoba lagi.`, "warning");
+        }
       } catch (err) { console.error("[Sync] Gagal:", err); }
     };
     syncData();
@@ -181,14 +191,26 @@ export default function App() {
     if (isNaN(n) || n < 0) return showToast("Masukkan angka yang valid!", "error");
     setIsSubmitting(true);
     try {
+      // 1. React state — UI update langsung
       setData(d => ({ ...d, [today]: { uang_awal: n, transaksi: [] } }));
+      // 2. IndexedDB — persistent local
       await saveUangAwalLocal(today, n);
-      if (isOnline) { try { await saveHarian(today, n); } catch { /* offline */ } }
-      else { await addToSyncQueue('uang_awal', { tanggal: today, uang_awal: n }); }
-      closeModal();
-      setSetupUangAwal("");
-      showToast("Hari baru berhasil dibuat!");
-    } catch { showToast("Gagal setup, coba lagi!", "error"); }
+      // 3. Supabase — cloud sync
+      if (isOnline) {
+        await saveHarian(today, n);
+        closeModal();
+        setSetupUangAwal("");
+        showToast("Hari baru berhasil dibuat!");
+      } else {
+        await addToSyncQueue('uang_awal', { tanggal: today, uang_awal: n });
+        closeModal();
+        setSetupUangAwal("");
+        showToast("Data tersimpan di perangkat. Akan sync saat online.", "info");
+      }
+    } catch (err) {
+      console.error("[doSetup] Error:", err);
+      showToast("Gagal menyimpan: " + (err.message || "Terjadi kesalahan"), "error");
+    }
     finally { setIsSubmitting(false); }
   };
 
@@ -270,16 +292,27 @@ export default function App() {
     if (isNaN(n) || n < 0) return showToast("Angka tidak valid!", "error");
     setIsSubmitting(true);
     try {
+      // 1. React state — UI update langsung
       const d = { ...data };
       if (!d[ubahTarget]) d[ubahTarget] = { uang_awal: 0, transaksi: [] };
       d[ubahTarget].uang_awal = n;
       setData({ ...d });
+      // 2. IndexedDB — persistent local
       await saveUangAwalLocal(ubahTarget, n);
-      if (isOnline) { try { await saveHarian(ubahTarget, n); } catch { /* offline */ } }
-      else { await addToSyncQueue('uang_awal', { tanggal: ubahTarget, uang_awal: n }); }
-      closeModal();
-      showToast("Uang awal diperbarui!");
-    } catch { showToast("Gagal mengubah uang awal!", "error"); }
+      // 3. Supabase — cloud sync
+      if (isOnline) {
+        await saveHarian(ubahTarget, n);
+        closeModal();
+        showToast("Uang awal diperbarui!");
+      } else {
+        await addToSyncQueue('uang_awal', { tanggal: ubahTarget, uang_awal: n });
+        closeModal();
+        showToast("Data tersimpan di perangkat. Akan sync saat online.", "info");
+      }
+    } catch (err) {
+      console.error("[doUbahAwal] Error:", err);
+      showToast("Gagal menyimpan: " + (err.message || "Terjadi kesalahan"), "error");
+    }
     finally { setIsSubmitting(false); }
   };
 

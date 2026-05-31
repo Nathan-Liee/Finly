@@ -77,17 +77,30 @@ export async function saveHarian(tanggal, uang_awal) {
   if (!user) return;
 
   // Manual check and update to avoid upsert unique constraint issues
-  const { data: existing } = await supabase
+  const { data: existing, error: checkError } = await supabase
     .from('uang_awal')
     .select('id')
     .eq('tanggal', tanggal)
     .eq('user_id', user.id)
     .maybeSingle();
 
+  if (checkError) {
+    console.error('Gagal cek uang_awal:', checkError.message);
+    throw checkError;
+  }
+
   if (existing) {
-    await supabase.from('uang_awal').update({ uang_awal }).eq('id', existing.id);
+    const { error } = await supabase.from('uang_awal').update({ uang_awal }).eq('id', existing.id);
+    if (error) {
+      console.error('Gagal update uang_awal:', error.message);
+      throw error;
+    }
   } else {
-    await supabase.from('uang_awal').insert({ tanggal, uang_awal, user_id: user.id });
+    const { error } = await supabase.from('uang_awal').insert({ tanggal, uang_awal, user_id: user.id });
+    if (error) {
+      console.error('Gagal insert uang_awal:', error.message);
+      throw error;
+    }
   }
 }
 
