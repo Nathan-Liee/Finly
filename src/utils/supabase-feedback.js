@@ -1,5 +1,7 @@
-// src/utils/supabase.js
+// src/utils/supabase-feedback.js
 // Helper untuk insert feedback
+
+import { supabase } from "./supabase";
 
 export async function insertFeedback({ kategori, judul, pesan, email }) {
   const { data: { user } } = await supabase.auth.getUser();
