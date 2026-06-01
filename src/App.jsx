@@ -288,6 +288,8 @@ export default function App() {
 
   const doUbahAwal = async (overrideValue, overrideTarget) => {
     if (isSubmitting) return;
+    // Defensive guard: React click event may leak as first argument
+    if (typeof overrideValue === 'object' && overrideValue !== null && overrideValue.nativeEvent) overrideValue = undefined;
     const targetTanggal = overrideTarget || ubahTarget;
     if (!targetTanggal) {
       showToast("Tanggal uang awal tidak valid", "error");
@@ -686,7 +688,7 @@ export default function App() {
               <Field label="Uang Awal Baru" value={formUangAwal} onChange={handleFormUangAwalChange} type="number" placeholder="0" prefix="Rp" onKeyDown={(e) => { if (e.key === "Enter" && !isSubmitting) doUbahAwal(); }} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <Btn onClick={closeModal} variant="ghost">Batal</Btn>
-                <Btn onClick={doUbahAwal} icon="check" disabled={isSubmitting}>Simpan</Btn>
+                <Btn onClick={() => doUbahAwal()} icon="check" disabled={isSubmitting}>Simpan</Btn>
               </div>
             </>
           )}
