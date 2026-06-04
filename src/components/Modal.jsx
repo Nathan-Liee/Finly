@@ -21,6 +21,9 @@ export default function Modal({ show, onClose, title, children }) {
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         style={{
           width: "100%",
           maxWidth: 440,
@@ -43,6 +46,7 @@ export default function Modal({ show, onClose, title, children }) {
           </h3>
           <button
             onClick={onClose}
+            aria-label="Tutup"
             style={{
               width: 32,
               height: 32,

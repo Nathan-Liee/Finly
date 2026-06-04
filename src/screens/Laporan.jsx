@@ -385,7 +385,7 @@ export default function LaporanScreen({
                   }}>
                     {t.type === "masuk" ? "+" : "-"}{formatUang(t.jumlah)}
                   </p>
-                  <button onClick={(e) => { e.stopPropagation(); onEditTx?.(i, tgl); closeModal?.(); }} style={{
+                  <button onClick={(e) => { e.stopPropagation(); onEditTx?.(i, tgl); closeModal?.(); }} aria-label="Edit transaksi" style={{
                     width: 28, height: 28, borderRadius: 8, border: "none",
                     background: "var(--accent-subtle)", cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -393,7 +393,7 @@ export default function LaporanScreen({
                   }}>
                     ✏️
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); onDeleteTx?.(i, tgl); closeModal?.(); }} style={{
+                  <button onClick={(e) => { e.stopPropagation(); onDeleteTx?.(i, tgl); closeModal?.(); }} aria-label="Hapus transaksi" style={{
                     width: 28, height: 28, borderRadius: 8, border: "none",
                     background: "var(--danger-subtle)", cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",

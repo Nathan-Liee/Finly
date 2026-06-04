@@ -389,7 +389,7 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                 {(onEditTx || onDeleteTx) && (
                   <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                     {onEditTx && (
-                      <button onClick={() => onEditTx(realIdx)} style={{
+                      <button onClick={() => onEditTx(realIdx)} aria-label="Edit transaksi" style={{
                         width: 30, height: 30, borderRadius: 8, border: "none",
                         background: "var(--accent-subtle)", cursor: "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center",
@@ -398,7 +398,7 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                       </button>
                     )}
                     {onDeleteTx && (
-                      <button onClick={() => onDeleteTx(realIdx)} style={{
+                      <button onClick={() => onDeleteTx(realIdx)} aria-label="Hapus transaksi" style={{
                         width: 30, height: 30, borderRadius: 8, border: "none",
                         background: "var(--danger-subtle)", cursor: "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center",

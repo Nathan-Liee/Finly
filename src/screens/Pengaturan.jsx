@@ -157,6 +157,7 @@ export default function PengaturanScreen({
   });
 
   useEffect(() => {
+    // TODO: Ganti hardcoded email ini dengan env variable atau admin check dari backend
     if (user?.email?.toLowerCase() === "xybcaa.454@gmail.com") {
       setIsAdmin(true);
     }
@@ -963,22 +964,13 @@ export default function PengaturanScreen({
           Keluar
         </button>
 
-        <button onClick={() => {
-            if(window.confirm("Hapus akun permanen? Data tidak bisa dipulihkan.")) {
-                supabase.auth.admin?.deleteUser?.(user.id).then(() => {
-                    supabase.auth.signOut().then(() => onLogout());
-                }).catch(() => {
-                    supabase.auth.signOut().then(() => onLogout());
-                });
-            }
-        }} style={{
+        <div style={{
           width: "100%", padding: "12px", borderRadius: 12, marginTop: 10,
-          background: "none", border: "none", color: "var(--text-muted)",
-          fontSize: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif",
-          textDecoration: "underline",
+          color: "var(--text-muted)", fontSize: 12, textAlign: "center",
+          fontFamily: "'Inter', sans-serif",
         }}>
-          Hapus Akun Permanen
-        </button>
+          ⚠️ Fitur hapus akun — hubungi admin
+        </div>
       </div>
     </div>
   );

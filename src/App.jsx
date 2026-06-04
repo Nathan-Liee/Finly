@@ -39,7 +39,7 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [profile, setProfile]  = useState(null);
   const [today, setToday]      = useState(getCurrentDate);
-  const [toast, setToast]      = useState(null);
+  const [toasts, setToasts]    = useState([]);
   const [modal, setModal]      = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -182,8 +182,9 @@ export default function App() {
 
   /* ─── UI helpers ─── */
   const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 2200);
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, msg, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2200);
   };
 
   const closeModal = () => {
@@ -462,7 +463,6 @@ export default function App() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
         body { margin: 0; background: var(--bg); }
         input::placeholder { color: var(--text-muted); }
@@ -493,7 +493,7 @@ export default function App() {
       `}</style>
 
       <div className="app-container">
-        {toast && <Toast msg={toast.msg} type={toast.type} />}
+        {toasts[0] && <Toast msg={toasts[0].msg} type={toasts[0].type} />}
         {!isOnline && (
           <div className="app-offline-banner">
             Tidak ada koneksi internet
@@ -803,7 +803,7 @@ export default function App() {
                   const btn = document.createElement("button");
                   btn.style.display = "none";
                   btn.onclick = () => {
-                    const esc = (v) => { const s = String(v ?? ""); return /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+                    const esc = (v) => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = '\t' + s; return /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
                     let totalMasuk = 0, totalKeluar = 0, totalTransaksi = 0;
                     const allDates = Object.keys(data).sort((a, b) => b.localeCompare(a));
                     allDates.forEach(tgl => {
