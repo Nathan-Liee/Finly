@@ -652,6 +652,13 @@ export default function LaporanScreen({
       </div>
 
       {/* ─── Filter Tabs ─── */}
+      {searchQuery.trim() && (
+        <div style={{ padding: "0 20px 4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>
+            {filteredDates.length} dari {dates.length} tanggal • {totalTx} transaksi
+          </span>
+        </div>
+      )}
       <div style={{ padding: "0 20px 16px" }}>
         <div style={{ display: "flex", gap: 6 }}>
           {[
