@@ -120,7 +120,8 @@ function Divider() {
 export default function PengaturanScreen({
   data, today, dates,
   setUbahTarget, setFormUangAwal, setModal,
-  profile, setProfile, user, onResetUangAwal, onLogout
+  profile, setProfile, user, onResetUangAwal, onLogout,
+  kategoriList, onUpdateKategori,
 }) {
   /* ─── Profile editing ─── */
   const [editMode, setEditMode] = useState(null); // "username" | "password" | null
@@ -891,6 +892,118 @@ export default function PengaturanScreen({
           </div>
         </div>
       )}
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  KATEGORI                                */}
+      {/* ═══════════════════════════════════════ */}
+      {(() => {
+        const [showAdd, setShowAdd] = useState(false);
+        const [newKat, setNewKat] = useState("");
+        const [editIdx, setEditIdx] = useState(null);
+        const [editVal, setEditVal] = useState("");
+        const handleAdd = () => {
+          const trimmed = newKat.trim();
+          if (!trimmed || kategoriList.includes(trimmed)) return;
+          onUpdateKategori([...kategoriList, trimmed]);
+          setNewKat(""); setShowAdd(false);
+        };
+        const handleDelete = (idx) => {
+          const updated = kategoriList.filter((_, i) => i !== idx);
+          onUpdateKategori(updated);
+        };
+        const handleEdit = (idx) => {
+          const trimmed = editVal.trim();
+          if (!trimmed || kategoriList.includes(trimmed)) return;
+          const updated = kategoriList.map((k, i) => i === idx ? trimmed : k);
+          onUpdateKategori(updated);
+          setEditIdx(null); setEditVal("");
+        };
+        return (
+          <>
+            <SectionHeader title="Kategori" />
+            <SettingsCard>
+              {kategoriList.map((k, i) => (
+                <div key={i}>
+                  {i > 0 && <Divider />}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px" }}>
+                    {editIdx === i ? (
+                      <div style={{ flex: 1, display: "flex", gap: 6 }}>
+                        <input value={editVal} onChange={e => setEditVal(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") handleEdit(i); }}
+                          style={{
+                            flex: 1, padding: "8px 12px", borderRadius: 8,
+                            border: "1px solid var(--border)", background: "var(--input-bg)",
+                            color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif",
+                            outline: "none",
+                          }} />
+                        <button onClick={() => handleEdit(i)} style={{
+                          padding: "8px 12px", borderRadius: 8, border: "none",
+                          background: "var(--accent)", color: "#fff", fontSize: 12,
+                          fontWeight: 700, cursor: "pointer",
+                        }}>Simpan</button>
+                        <button onClick={() => setEditIdx(null)} style={{
+                          padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)",
+                          background: "var(--surface)", color: "var(--text-secondary)", fontSize: 12,
+                          fontWeight: 600, cursor: "pointer",
+                        }}>Batal</button>
+                      </div>
+                    ) : (
+                      <>
+                        <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text)" }}>{k}</span>
+                        <button onClick={() => { setEditIdx(i); setEditVal(k); }} style={{
+                          width: 28, height: 28, borderRadius: 8, border: "none",
+                          background: "var(--accent-subtle)", cursor: "pointer", display: "flex",
+                          alignItems: "center", justifyContent: "center", fontSize: 12,
+                        }}>✏️</button>
+                        {k !== "Lainnya" && (
+                          <button onClick={() => handleDelete(i)} style={{
+                            width: 28, height: 28, borderRadius: 8, border: "none",
+                            background: "var(--danger-subtle)", cursor: "pointer", display: "flex",
+                            alignItems: "center", justifyContent: "center", fontSize: 12,
+                          }}>🗑️</button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {showAdd ? (
+                <div style={{ padding: "10px 16px", display: "flex", gap: 6 }}>
+                  <input value={newKat} onChange={e => setNewKat(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") handleAdd(); }}
+                    placeholder="Nama kategori baru"
+                    style={{
+                      flex: 1, padding: "8px 12px", borderRadius: 8,
+                      border: "1px solid var(--border)", background: "var(--input-bg)",
+                      color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif",
+                      outline: "none",
+                    }} />
+                  <button onClick={handleAdd} style={{
+                    padding: "8px 12px", borderRadius: 8, border: "none",
+                    background: "var(--success)", color: "#fff", fontSize: 12,
+                    fontWeight: 700, cursor: "pointer",
+                  }}>Tambah</button>
+                  <button onClick={() => setShowAdd(false)} style={{
+                    padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)",
+                    background: "var(--surface)", color: "var(--text-secondary)", fontSize: 12,
+                    fontWeight: 600, cursor: "pointer",
+                  }}>Batal</button>
+                </div>
+              ) : (
+                <div style={{ padding: "10px 16px" }}>
+                  <button onClick={() => setShowAdd(true)} style={{
+                    width: "100%", padding: "10px", borderRadius: 10, border: "1px dashed var(--border)",
+                    background: "var(--surface)", color: "var(--accent)", fontSize: 13,
+                    fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+                  }}>
+                    + Tambah Kategori
+                  </button>
+                </div>
+              )}
+            </SettingsCard>
+          </>
+        );
+      })()}
 
       {/* ═══════════════════════════════════════ */}
       {/*  DATA & PRIVASI                          */}

@@ -61,6 +61,14 @@ export default function App() {
   const [resetStart,   setResetStart]   = useState("");
   const [resetEnd,     setResetEnd]     = useState("");
   const [resetUangAwal,setResetUangAwal]= useState(false);
+  const [kategoriList, setKategoriList] = useState(() => {
+    try {
+      const stored = localStorage.getItem("finly-kategori");
+      return stored ? JSON.parse(stored) : ["Makanan & Minuman", "Transportasi", "Belanja", "Hiburan", "Kesehatan", "Pendidikan", "Tagihan", "Lainnya"];
+    } catch {
+      return ["Makanan & Minuman", "Transportasi", "Belanja", "Hiburan", "Kesehatan", "Pendidikan", "Tagihan", "Lainnya"];
+    }
+  });
 
   /* ─── Auth init ─── */
   useEffect(() => {
@@ -432,6 +440,11 @@ export default function App() {
     setModal("konfirmHapus");
   }, [setHapusIdx, setSelectedDate, setModal, today]);
 
+  const updateKategoriList = useCallback((newList) => {
+    setKategoriList(newList);
+    try { localStorage.setItem("finly-kategori", JSON.stringify(newList)); } catch {}
+  }, []);
+
   /* ─── Loading screen ─── */
   if (authLoading) return (
     <div style={{
@@ -572,6 +585,7 @@ export default function App() {
               profile={profile} setProfile={setProfile} user={user}
               onResetUangAwal={async (tanggal) => { await doUbahAwal(0, tanggal); }}
               onLogout={async () => { try { await supabase.auth.signOut(); } catch{} setUser(null); setData({}); setProfile(null); setTab("home"); }}
+              kategoriList={kategoriList} onUpdateKategori={updateKategoriList}
             />
           </div>
         )}
@@ -652,9 +666,19 @@ export default function App() {
         {/* Tambah pengeluaran */}
         <Modal show={modal === "keluar"} onClose={closeModal} title="Tambah Pengeluaran">
           <Field label="Jumlah (dari Cash)" value={formJumlah} onChange={handleFormJumlahChange} type="number" placeholder="0" prefix="Rp" onKeyDown={(e) => { if (e.key === "Enter" && !isSubmitting) doKeluar(); }} />
-          <Field label="Kategori" value={formKategori} onChange={setFormKategori} placeholder="Belanja, Gaji, dll." onKeyDown={(e) => { if (e.key === "Enter" && !isSubmitting) doKeluar(); }} />
+          <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, letterSpacing: 0.5, display: "block", marginBottom: 8 }}>Kategori</label>
+          <select value={formKategori} onChange={(e) => setFormKategori(e.target.value)}
+            style={{
+              width: "100%", padding: "12px 14px", borderRadius: 12,
+              border: "1px solid var(--border)", background: "var(--input-bg)",
+              color: formKategori ? "var(--text)" : "var(--text-muted)",
+              fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none", marginBottom: 16,
+            }}>
+            <option value="">Pilih kategori</option>
+            {kategoriList.map(k => <option key={k} value={k}>{k}</option>)}
+          </select>
           <Field label="Catatan" value={formCatatan} onChange={setFormCatatan} placeholder="Opsional" onKeyDown={(e) => { if (e.key === "Enter" && !isSubmitting) doKeluar(); }} />
-          <Btn onClick={doKeluar} variant="danger" icon="minus" disabled={isSubmitting} fullWidth>Tambah Pengeluaran</Btn>
+          <Btn onClick={doKeluar} variant="danger" icon="minus" disabled={isSubmitting || !formKategori} fullWidth>Tambah Pengeluaran</Btn>
         </Modal>
 
         {/* Hapus transaksi */}
@@ -741,8 +765,17 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    <Field label="Kategori" value={formEditKategori} onChange={setFormEditKategori} placeholder="Belanja, Gaji, dll."
-                      onKeyDown={(e) => { if (e.key === "Enter" && !isSubmitting) doEdit(); }} />
+                    <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, letterSpacing: 0.5, display: "block", marginBottom: 8 }}>Kategori</label>
+                    <select value={formEditKategori} onChange={(e) => setFormEditKategori(e.target.value)}
+                      style={{
+                        width: "100%", padding: "12px 14px", borderRadius: 12,
+                        border: "1px solid var(--border)", background: "var(--input-bg)",
+                        color: formEditKategori ? "var(--text)" : "var(--text-muted)",
+                        fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none", marginBottom: 16,
+                      }}>
+                      <option value="">Pilih kategori</option>
+                      {kategoriList.map(k => <option key={k} value={k}>{k}</option>)}
+                    </select>
                     <Field label="Catatan" value={formEditCatatan} onChange={setFormEditCatatan} placeholder="Opsional"
                       onKeyDown={(e) => { if (e.key === "Enter" && !isSubmitting) doEdit(); }} />
                   </>
