@@ -948,35 +948,6 @@ export default function PengaturanScreen({
           icon="code" iconColor="var(--text-muted)"
           title="Tech Stack" subtitle="React, Vite, Supabase"
         />
-        <Divider />
-        {/* ─── APK Download Card ─── */}
-        <div style={{ padding: "16px", textAlign: "center" }}>
-          <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
-            Unduh Finly Android
-          </p>
-          <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>
-            Gunakan Finly lebih nyaman di Android. Unduh APK resmi melalui GitHub Releases.
-          </p>
-          <a href="https://github.com/Nathan-Liee/Finly/releases/download/v1.0.5-android/Finly-v1.0.5-debug.apk"
-            target="_blank" rel="noopener noreferrer"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "10px 20px", borderRadius: 12,
-              background: "var(--gradient)", color: "#fff",
-              fontSize: 13, fontWeight: 700, textDecoration: "none",
-              fontFamily: "'Inter', sans-serif",
-              boxShadow: "0 4px 12px rgba(107, 126, 255, 0.25)",
-            }}>
-            Download APK
-          </a>
-          <div style={{ marginTop: 8 }}>
-            <a href="https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.0-android"
-              target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 11, color: "var(--accent)", textDecoration: "none", fontFamily: "'Inter', sans-serif" }}>
-              Lihat halaman release →
-            </a>
-          </div>
-        </div>
       </SettingsCard>
 
       {/* ═══════════════════════════════════════ */}
