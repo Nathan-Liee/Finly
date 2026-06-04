@@ -356,6 +356,35 @@ export default function LaporanScreen({
           <span style={{ color: "var(--accent)", fontWeight: 800, fontSize: 14 }}>{formatUang(c.uang_awal)}</span>
         </div>
 
+        {/* Kategori breakdown */}
+        {(() => {
+          const katMap = {};
+          c.transaksi.filter(t => t.type === "keluar").forEach(t => {
+            const k = t.kategori || "Lainnya";
+            katMap[k] = (katMap[k] || 0) + (t.jumlah || 0);
+          });
+          const katEntries = Object.entries(katMap).sort((a, b) => b[1] - a[1]);
+          if (katEntries.length === 0) return null;
+          return (
+            <div style={{ marginBottom: 12 }}>
+              <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Breakdown Kategori
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {katEntries.map(([k, v]) => (
+                  <div key={k} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "6px 12px", background: "var(--surface)", borderRadius: 8,
+                  }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{k}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--danger)" }}>-{formatUang(v)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Transactions */}
         {c.transaksi.length === 0 ? (
           <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Tidak ada transaksi</p>

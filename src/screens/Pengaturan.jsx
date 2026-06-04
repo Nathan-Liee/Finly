@@ -950,6 +950,12 @@ export default function PengaturanScreen({
                     ) : (
                       <>
                         <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text)" }}>{k}</span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, color: "var(--text-muted)",
+                          background: "var(--input-bg)", padding: "2px 8px", borderRadius: 6,
+                        }}>
+                          {Object.keys(data).reduce((s, tgl) => s + (data[tgl]?.transaksi?.filter(t => t.type === "keluar" && t.kategori === k).length ?? 0), 0)}x
+                        </span>
                         <button onClick={() => { setEditIdx(i); setEditVal(k); }} style={{
                           width: 28, height: 28, borderRadius: 8, border: "none",
                           background: "var(--accent-subtle)", cursor: "pointer", display: "flex",
