@@ -101,6 +101,8 @@ export default function LaporanScreen({
 }) {
   const [activeTab, setActiveTab] = useState("harian");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState("all"); // all | masuk | keluar
+  const [filterMetode, setFilterMetode] = useState("all"); // all | cash | qris
 
   /* ─── Search filter ─── */
   const filteredDates = searchQuery.trim()
@@ -115,13 +117,33 @@ export default function LaporanScreen({
       })
     : dates;
 
-  /* ─── Compute totals ─── */
+  /* ─── Apply type/metode filter on transactions ─── */
+  const filteredTx = (transaksi) => {
+    if (!transaksi) return [];
+    let result = transaksi;
+    if (searchQuery.trim()) {
+      result = result.filter(t =>
+        (t.kategori || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.catatan || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.metode || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.type.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    if (filterType !== "all") result = result.filter(t => t.type === filterType);
+    if (filterMetode !== "all") result = result.filter(t => (t.metode || "cash") === filterMetode);
+    return result;
+  };
+
+  /* ─── Compute totals (respects search + filter) ─── */
   let totalMasuk = 0, totalKeluar = 0, totalTx = 0;
-  dates.forEach(tgl => {
+  filteredDates.forEach(tgl => {
     const c = calc(tgl);
-    totalMasuk += c.totalMasuk ?? 0;
-    totalKeluar += c.totalKeluar ?? 0;
-    totalTx += c.transaksi?.length ?? 0;
+    const filtered = filteredTx(c.transaksi);
+    const m = filtered.filter(t => t.type === "masuk").reduce((s, t) => s + (t.jumlah || 0), 0);
+    const k = filtered.filter(t => t.type === "keluar").reduce((s, t) => s + (t.jumlah || 0), 0);
+    totalMasuk += m;
+    totalKeluar += k;
+    totalTx += filtered.length;
   });
   const saldoBersih = totalMasuk - totalKeluar;
 
@@ -425,6 +447,59 @@ export default function LaporanScreen({
             </button>
           )}
         </div>
+      </div>
+
+      {/* ─── Filter Pills ─── */}
+      <div style={{ padding: "0 20px 12px", display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {/* Type filter */}
+        <div style={{ display: "flex", gap: 4 }}>
+          {[
+            { key: "all", label: "Semua" },
+            { key: "masuk", label: "Masuk" },
+            { key: "keluar", label: "Keluar" },
+          ].map(f => (
+            <button key={f.key} onClick={() => setFilterType(f.key)} style={{
+              padding: "5px 12px", borderRadius: 16, border: "none",
+              background: filterType === f.key ? "var(--accent)" : "var(--surface)",
+              color: filterType === f.key ? "#fff" : "var(--text-secondary)",
+              fontWeight: 600, fontSize: 11, cursor: "pointer",
+              fontFamily: "'Inter', sans-serif", transition: "all 0.15s",
+              border: filterType !== f.key ? "1px solid var(--border)" : "none",
+            }}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {/* Metode filter */}
+        <div style={{ display: "flex", gap: 4 }}>
+          {[
+            { key: "all", label: "Semua" },
+            { key: "cash", label: "Cash" },
+            { key: "qris", label: "QRIS" },
+          ].map(f => (
+            <button key={f.key} onClick={() => setFilterMetode(f.key)} style={{
+              padding: "5px 12px", borderRadius: 16, border: "none",
+              background: filterMetode === f.key ? "var(--accent)" : "var(--surface)",
+              color: filterMetode === f.key ? "#fff" : "var(--text-secondary)",
+              fontWeight: 600, fontSize: 11, cursor: "pointer",
+              fontFamily: "'Inter', sans-serif", transition: "all 0.15s",
+              border: filterMetode !== f.key ? "1px solid var(--border)" : "none",
+            }}>
+              {f.key === "all" ? "Semua Metode" : f.label}
+            </button>
+          ))}
+        </div>
+        {searchQuery && (
+          <button onClick={() => { setSearchQuery(""); setFilterType("all"); setFilterMetode("all"); }}
+            style={{
+              padding: "5px 12px", borderRadius: 16, border: "1px solid var(--danger-subtle)",
+              background: "var(--danger-subtle)", color: "var(--danger)",
+              fontWeight: 600, fontSize: 11, cursor: "pointer",
+              fontFamily: "'Inter', sans-serif",
+          }}>
+            Reset
+          </button>
+        )}
       </div>
 
       {/* ─── Summary Cards ─── */}
