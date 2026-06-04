@@ -122,6 +122,7 @@ export default function PengaturanScreen({
   setUbahTarget, setFormUangAwal, setModal,
   profile, setProfile, user, onResetUangAwal, onLogout,
   kategoriList, onUpdateKategori,
+  budgetMap, onUpdateBudget,
 }) {
   /* ─── Profile editing ─── */
   const [editMode, setEditMode] = useState(null); // "username" | "password" | null
@@ -1035,9 +1036,73 @@ export default function PengaturanScreen({
         />
       </SettingsCard>
 
-      {/* ═══════════════════════════════════════
-       *  TENTANG                                 
-       * ═══════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════ */}
+      {/*  BUDGET BULANAN                          */}
+      {/* ═══════════════════════════════════════ */}
+      {(() => {
+        const now = new Date();
+        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const [budgetInput, setBudgetInput] = useState(String(budgetMap[currentMonthKey] ?? ""));
+        const [budgetSaved, setBudgetSaved] = useState(false);
+        const currentBudget = budgetMap[currentMonthKey] ?? 0;
+        return (
+          <>
+            <SectionHeader title="Budget Bulanan" />
+            <SettingsCard>
+              <div style={{ padding: "12px 16px" }}>
+                <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--text-muted)" }}>
+                  Set budget pengeluaran untuk bulan ini. Progress akan muncul di Home.
+                </p>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" }}>Rp</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={budgetInput}
+                    onChange={(e) => { setBudgetInput(e.target.value.replace(/[^0-9]/g, "")); setBudgetSaved(false); }}
+                    style={{
+                      flex: 1, padding: "10px 14px", borderRadius: 10,
+                      border: "1.5px solid var(--border)", background: "var(--input-bg)",
+                      color: "var(--text)", fontSize: 14, fontWeight: 600, outline: "none",
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const amount = parseInt(budgetInput, 10) || 0;
+                      onUpdateBudget(currentMonthKey, amount);
+                      setBudgetSaved(true);
+                    }}
+                    style={{
+                      padding: "10px 18px", borderRadius: 10, border: "none",
+                      background: "var(--accent)", color: "#fff",
+                      fontSize: 13, fontWeight: 700, cursor: "pointer",
+                      fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap",
+                    }}
+                  >
+                    Simpan
+                  </button>
+                </div>
+                {budgetSaved && (
+                  <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--success)", fontWeight: 600 }}>
+                    ✓ Budget disimpan
+                  </p>
+                )}
+                {currentBudget > 0 && !budgetSaved && (
+                  <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--text-muted)" }}>
+                    Budget saat ini: <strong style={{ color: "var(--text)" }}>{formatUang(currentBudget)}</strong> / bulan
+                  </p>
+                )}
+              </div>
+            </SettingsCard>
+          </>
+        );
+      })()}
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  TENTANG                                 */}
+      {/* ═══════════════════════════════════════ */}
       <SectionHeader title="Tentang" />
       <SettingsCard>
         <SettingRow

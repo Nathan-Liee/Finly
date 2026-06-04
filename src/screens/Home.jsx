@@ -26,10 +26,28 @@ function calcAggregate(data) {
 /* ═══════════════════════════════════════════
  *  HOME SCREEN
  * ═══════════════════════════════════════════ */
-const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user, onEditTx, onDeleteTx }) {
+const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user, onEditTx, onDeleteTx, budgetMap }) {
   const saldo = todayCalc.saldoCash ?? 0;
   const todayTransaksi = data[today]?.transaksi ?? [];
   const agg = useMemo(() => calcAggregate(data), [data]);
+
+  /* ─── Budget bulan ini ─── */
+  const currentMonth = today.substring(0, 7);
+  const budgetAmount = budgetMap?.[currentMonth] ?? 0;
+  const spentThisMonth = useMemo(() => {
+    if (!data) return 0;
+    let total = 0;
+    Object.keys(data).forEach(tgl => {
+      if (tgl.startsWith(currentMonth)) {
+        (data[tgl]?.transaksi ?? []).forEach(t => {
+          if (t.type === 'keluar') total += t.jumlah ?? 0;
+        });
+      }
+    });
+    return total;
+  }, [data, currentMonth]);
+  const budgetPct = budgetAmount > 0 ? Math.min((spentThisMonth / budgetAmount) * 100, 100) : 0;
+  const budgetOver = budgetAmount > 0 && spentThisMonth > budgetAmount;
 
   /* ─── Monthly Chart Data ─── */
   const monthlyData = useMemo(() => {
@@ -168,6 +186,45 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
           </div>
         </div>
       </div>
+
+      {/* ─── Budget Card ─── */}
+      {budgetAmount > 0 && (
+        <div style={{ padding: "0 20px 16px" }}>
+          <div style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 16, padding: "14px 16px",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>
+                🎯 Budget {new Date(currentMonth + "-01T00:00:00").toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+              </span>
+              <span style={{
+                fontSize: 11, fontWeight: 700,
+                color: budgetOver ? "var(--danger)" : "var(--text-muted)",
+              }}>
+                {formatUang(spentThisMonth)} / {formatUang(budgetAmount)}
+              </span>
+            </div>
+            <div style={{
+              height: 8, borderRadius: 4, background: "var(--border)", overflow: "hidden",
+            }}>
+              <div style={{
+                height: "100%", width: `${budgetPct}%`, borderRadius: 4,
+                background: budgetOver ? "var(--danger)" : budgetPct > 80 ? "var(--warning)" : "var(--success)",
+                transition: "width 0.3s",
+              }} />
+            </div>
+            <p style={{
+              margin: "6px 0 0", fontSize: 11, color: "var(--text-muted)", fontWeight: 500,
+            }}>
+              {budgetOver
+                ? `⚠️ Over budget ${formatUang(spentThisMonth - budgetAmount)}`
+                : `${Math.round(budgetPct)}% terpakai • sisa ${formatUang(Math.max(budgetAmount - spentThisMonth, 0))}`
+              }
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ─── Quick Stats ─── */}
       <div style={{ padding: "0 20px 20px" }}>

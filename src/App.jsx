@@ -70,6 +70,26 @@ export default function App() {
     }
   });
 
+  /* ─── Budget bulanan ─── */
+  const [budgetMap, setBudgetMap] = useState(() => {
+    try {
+      const stored = localStorage.getItem("finly-budget");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const updateBudget = useCallback((monthKey, amount) => {
+    setBudgetMap(prev => {
+      const next = { ...prev };
+      if (amount <= 0) delete next[monthKey];
+      else next[monthKey] = amount;
+      try { localStorage.setItem("finly-budget", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
   /* ─── Auth init ─── */
   useEffect(() => {
     let cancelled = false;
@@ -575,6 +595,7 @@ export default function App() {
               profile={profile} user={user}
               onEditTx={handleEditTx}
               onDeleteTx={handleDeleteTx}
+              budgetMap={budgetMap}
             />
           </div>
         )}
@@ -599,6 +620,7 @@ export default function App() {
               onResetUangAwal={async (tanggal) => { await doUbahAwal(0, tanggal); }}
               onLogout={async () => { try { await supabase.auth.signOut(); } catch{} setUser(null); setData({}); setProfile(null); setTab("home"); }}
               kategoriList={kategoriList} onUpdateKategori={updateKategoriList}
+              budgetMap={budgetMap} onUpdateBudget={updateBudget}
             />
           </div>
         )}
