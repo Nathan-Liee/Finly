@@ -99,6 +99,7 @@ export default function LaporanScreen({
   selectedDate, setSelectedDate,
   modalOpen, setModal, closeModal,
   onEditTx, onDeleteTx,
+  onEditUangAwal,
 }) {
   const [activeTab, setActiveTab] = useState("harian");
   const [searchQuery, setSearchQuery] = useState("");
@@ -350,10 +351,17 @@ export default function LaporanScreen({
         {/* Uang awal */}
         <div style={{
           background: "var(--accent-subtle)", borderRadius: 12, padding: "10px 14px",
-          display: "flex", justifyContent: "space-between", marginBottom: 16,
+          display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16,
         }}>
           <span style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>Uang Awal</span>
-          <span style={{ color: "var(--accent)", fontWeight: 800, fontSize: 14 }}>{formatUang(c.uang_awal)}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ color: "var(--accent)", fontWeight: 800, fontSize: 14 }}>{formatUang(c.uang_awal)}</span>
+            <button onClick={(e) => { e.stopPropagation(); onEditUangAwal?.(tgl); closeModal?.(); }} style={{
+              width: 24, height: 24, borderRadius: 6, border: "none",
+              background: "transparent", cursor: "pointer", display: "flex",
+              alignItems: "center", justifyContent: "center", fontSize: 12, opacity: 0.6,
+            }}>✏️</button>
+          </div>
         </div>
 
         {/* Kategori breakdown */}

@@ -574,6 +574,7 @@ export default function App() {
               selectedDate={selectedDate} setSelectedDate={setSelectedDate}
               modalOpen={modal} setModal={setModal} closeModal={closeModal}
               onEditTx={handleEditTx} onDeleteTx={handleDeleteTx}
+              onEditUangAwal={(tgl) => { setUbahTarget(tgl); setFormUangAwal(String(data[tgl]?.uang_awal ?? "0")); setModal("ubahAwal"); }}
             />
           </div>
         )}
