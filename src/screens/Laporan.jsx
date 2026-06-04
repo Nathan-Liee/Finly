@@ -429,14 +429,24 @@ export default function LaporanScreen({
         <h2 style={{ color: "var(--text)", fontSize: 20, fontWeight: 800, margin: 0, fontFamily: "'Inter', sans-serif" }}>
           Laporan
         </h2>
-        <button onClick={exportCSV} style={{
-          background: "var(--success-subtle)", border: "1px solid rgba(16,185,129,0.2)",
-          borderRadius: 10, padding: "8px 14px", cursor: "pointer", color: "var(--success)",
-          fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
-          fontFamily: "'Inter', sans-serif",
-        }}>
-          <Icon name="download" size={14} color="var(--success)" /> Export
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setModal("resetRange")} style={{
+            background: "var(--danger-subtle)", border: "1px solid rgba(239,68,68,0.2)",
+            borderRadius: 10, padding: "8px 14px", cursor: "pointer", color: "var(--danger)",
+            fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            <Icon name="trash" size={14} color="var(--danger)" /> Reset
+          </button>
+          <button onClick={exportCSV} style={{
+            background: "var(--success-subtle)", border: "1px solid rgba(16,185,129,0.2)",
+            borderRadius: 10, padding: "8px 14px", cursor: "pointer", color: "var(--success)",
+            fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            <Icon name="download" size={14} color="var(--success)" /> Export
+          </button>
+        </div>
       </div>
 
       {/* ─── Search ─── */}

@@ -58,6 +58,9 @@ export default function App() {
   const [formEditMetode,  setFormEditMetode]  = useState("cash");
   const [formEditKategori,setFormEditKategori]= useState("");
   const [formEditCatatan, setFormEditCatatan] = useState("");
+  const [resetStart,   setResetStart]   = useState("");
+  const [resetEnd,     setResetEnd]     = useState("");
+  const [resetUangAwal,setResetUangAwal]= useState(false);
 
   /* ─── Auth init ─── */
   useEffect(() => {
@@ -193,6 +196,7 @@ export default function App() {
     setFormUangAwal(""); setHapusIdx(null);
     setEditIdx(null); setFormEditJumlah(""); setFormEditMetode("cash");
     setFormEditKategori(""); setFormEditCatatan("");
+    setResetStart(""); setResetEnd(""); setResetUangAwal(false);
   };
 
   const handleFormJumlahChange    = (val) => setFormJumlah(formatAngka(val ?? ""));
@@ -365,6 +369,41 @@ export default function App() {
       closeModal();
       showToast("Transaksi diperbarui!");
     } catch { showToast("Gagal memperbarui!", "error"); }
+    finally { setIsSubmitting(false); }
+  };
+
+  const doResetRange = async () => {
+    if (isSubmitting) return;
+    if (!resetStart || !resetEnd) return showToast("Pilih tanggal awal & akhir!", "error");
+    if (resetStart > resetEnd) return showToast("Tanggal akhir harus setelah tanggal awal!", "error");
+    setIsSubmitting(true);
+    try {
+      const d = { ...data };
+      const datesToReset = Object.keys(d).filter(tgl => tgl >= resetStart && tgl <= resetEnd);
+      if (datesToReset.length === 0) { showToast("Tidak ada data di range tersebut", "info"); setIsSubmitting(false); return; }
+      for (const tgl of datesToReset) {
+        if (!d[tgl]) continue;
+        d[tgl].transaksi = [];
+        if (resetUangAwal) d[tgl].uang_awal = 0;
+      }
+      setData({ ...d });
+      for (const tgl of datesToReset) {
+        await saveTransaksiLocal(tgl, d[tgl].transaksi);
+        if (resetUangAwal) await saveUangAwalLocal(tgl, d[tgl].uang_awal);
+        if (isOnline) {
+          try { await saveTransaksi(tgl, d[tgl].transaksi); } catch {}
+          if (resetUangAwal) try { await saveHarian(tgl, d[tgl].uang_awal); } catch {}
+        } else {
+          await addToSyncQueue('transaksi', { tanggal: tgl, transaksi: d[tgl].transaksi });
+          if (resetUangAwal) await addToSyncQueue('uang_awal', { tanggal: tgl, uang_awal: d[tgl].uang_awal });
+        }
+      }
+      closeModal();
+      showToast(`${datesToReset.length} hari direset!`, "info");
+    } catch (err) {
+      console.error("[doResetRange] Error:", err);
+      showToast("Gagal reset: " + (err.message || "Error"), "error");
+    }
     finally { setIsSubmitting(false); }
   };
 
@@ -731,6 +770,50 @@ export default function App() {
               </div>
             </>
           )}
+        </Modal>
+
+        {/* Reset transaksi per range */}
+        <Modal show={modal === "resetRange"} onClose={closeModal} title="Reset Transaksi per Range">
+          <div>
+            <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>
+              Hapus semua transaksi dalam rentang tanggal tertentu.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+              <div>
+                <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 6 }}>Tanggal Awal</label>
+                <input type="date" value={resetStart} onChange={e => setResetStart(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)",
+                    background: "var(--input-bg)", color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
+              </div>
+              <div>
+                <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 6 }}>Tanggal Akhir</label>
+                <input type="date" value={resetEnd} onChange={e => setResetEnd(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)",
+                    background: "var(--input-bg)", color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
+              </div>
+            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, cursor: "pointer" }}>
+              <input type="checkbox" checked={resetUangAwal} onChange={e => setResetUangAwal(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: "var(--danger)" }} />
+              <span style={{ color: "var(--text)", fontSize: 13 }}>Reset uang awal juga</span>
+            </label>
+            {resetStart && resetEnd && (() => {
+              const c = Object.keys(data).filter(tgl => tgl >= resetStart && tgl <= resetEnd).length;
+              const t = Object.keys(data).filter(tgl => tgl >= resetStart && tgl <= resetEnd)
+                .reduce((s, tgl) => s + (data[tgl]?.transaksi?.length ?? 0), 0);
+              return c > 0 ? (
+                <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 16 }}>
+                  {c} hari • {t} transaksi akan direset
+                </p>
+              ) : (
+                <p style={{ color: "var(--warning)", fontSize: 12, marginBottom: 16 }}>Tidak ada data di range ini</p>
+              );
+            })()}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <Btn onClick={closeModal} variant="ghost">Batal</Btn>
+              <Btn onClick={doResetRange} variant="danger" icon="trash" disabled={isSubmitting || !resetStart || !resetEnd}>Reset</Btn>
+            </div>
+          </div>
         </Modal>
 
         {/* Clear all data */}
