@@ -76,3 +76,8 @@ body {
     transform: translateY(0);
   }
 }
+
+/* ─── Spinner ─── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

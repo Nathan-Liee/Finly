@@ -31,6 +31,57 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
   const todayTransaksi = data[today]?.transaksi ?? [];
   const agg = useMemo(() => calcAggregate(data), [data]);
 
+  /* ─── Monthly Chart Data ─── */
+  const monthlyData = useMemo(() => {
+    if (!data || typeof data !== 'object') return [];
+    const map = {};
+    Object.keys(data).forEach(tgl => {
+      const m = tgl.substring(0, 7);
+      if (!map[m]) map[m] = { masuk: 0, keluar: 0 };
+      (data[tgl]?.transaksi ?? []).forEach(t => {
+        if (t.type === 'masuk') map[m].masuk += t.jumlah ?? 0;
+        else map[m].keluar += t.jumlah ?? 0;
+      });
+    });
+    return Object.keys(map).sort().slice(-8).map(m => ({ month: m, ...map[m] }));
+  }, [data]);
+
+  /* ─── Kategori Breakdown Data ─── */
+  const kategoriBreakdown = useMemo(() => {
+    if (!data || typeof data !== 'object') return [];
+    const map = {};
+    Object.keys(data).forEach(tgl => {
+      (data[tgl]?.transaksi ?? []).forEach(t => {
+        if (t.type === 'keluar') {
+          const k = t.kategori || 'Lainnya';
+          map[k] = (map[k] || 0) + (t.jumlah ?? 0);
+        }
+      });
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => ({ kategori: k, jumlah: v }));
+  }, [data]);
+
+  /* ─── Net Trend Data ─── */
+  const netTrend = useMemo(() => {
+    if (!data || typeof data !== 'object') return { direction: 'flat', diff: 0, thisNet: 0, lastNet: 0 };
+    const now = new Date();
+    const ym = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const tm = ym(now);
+    const lm = ym(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    let tn = 0, ln = 0;
+    Object.keys(data).forEach(tgl => {
+      const mm = tgl.substring(0, 7);
+      let net = 0;
+      (data[tgl]?.transaksi ?? []).forEach(t => {
+        net += (t.type === 'masuk' ? 1 : -1) * (t.jumlah ?? 0);
+      });
+      if (mm === tm) tn += net;
+      if (mm === lm) ln += net;
+    });
+    const d = tn - ln;
+    return { direction: d > 0 ? 'up' : d < 0 ? 'down' : 'flat', diff: d, thisNet: tn, lastNet: ln };
+  }, [data]);
+
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return "Pagi";
@@ -172,6 +223,98 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
             <div style={{ textAlign: "center" }}>
               <p style={{ margin: 0, fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Hari Aktif</p>
               <p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 800, color: "var(--accent)", fontFamily: "'Inter', sans-serif" }}>{agg.hariAktif}</p>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Monthly Income/Expense Chart ─── */}
+      {monthlyData.length > 0 && (
+        <div style={{ padding: "0 20px 20px" }}>
+          <Card style={{ padding: "16px" }}>
+            <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
+              Pemasukan vs Pengeluaran per Bulan
+            </p>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 72 }}>
+              {(() => {
+                const maxVal = Math.max(...monthlyData.flatMap(m => [m.masuk, m.keluar]), 1);
+                return monthlyData.map(m => {
+                  const masukH = Math.max((m.masuk / maxVal) * 56, m.masuk > 0 ? 4 : 0);
+                  const keluarH = Math.max((m.keluar / maxVal) * 56, m.keluar > 0 ? 4 : 0);
+                  return (
+                    <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                      <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                        <div style={{ width: "70%", height: masukH + "px", background: "var(--success)", borderRadius: "3px 3px 0 0" }} />
+                        <div style={{ width: "70%", height: keluarH + "px", background: "var(--danger)", borderRadius: "3px 3px 0 0" }} />
+                      </div>
+                      <span style={{ fontSize: 9, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif", marginTop: 2 }}>
+                        {m.month.slice(5, 7)}/{m.month.slice(2, 4)}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: "var(--success)" }} />
+                <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>Masuk</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: "var(--danger)" }} />
+                <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>Keluar</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Net Trend Indicator ─── */}
+      {monthlyData.length >= 2 && (
+        <div style={{ padding: "0 20px 20px" }}>
+          <Card style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: netTrend.direction === 'up' ? 'var(--success)' : netTrend.direction === 'down' ? 'var(--danger)' : 'var(--text-muted)' }}>
+                {netTrend.direction === 'up' ? '\u2191' : netTrend.direction === 'down' ? '\u2193' : '\u2192'}
+              </span>
+              <div>
+                <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)", fontWeight: 500, fontFamily: "'Inter', sans-serif" }}>
+                  Tren Saldo Bersih Bulanan
+                </p>
+                <p style={{ margin: "1px 0 0", fontSize: 13, fontWeight: 700, color: netTrend.direction === 'up' ? 'var(--success)' : netTrend.direction === 'down' ? 'var(--danger)' : 'var(--text-muted)', fontFamily: "'Inter', sans-serif" }}>
+                  {netTrend.direction === 'up' ? 'Lebih baik dari bulan lalu' : netTrend.direction === 'down' ? 'Lebih buruk dari bulan lalu' : 'Sama dengan bulan lalu'}
+                </p>
+              </div>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>
+              {netTrend.diff > 0 ? '+' : ''}{formatUang(netTrend.diff)}
+            </span>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Kategori Breakdown ─── */}
+      {kategoriBreakdown.length > 0 && (
+        <div style={{ padding: "0 20px 20px" }}>
+          <Card style={{ padding: "16px" }}>
+            <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
+              Kategori Breakdown (Top 5)
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {(() => {
+                const maxKat = Math.max(...kategoriBreakdown.map(k => k.jumlah), 1);
+                return kategoriBreakdown.map(k => (
+                  <div key={k.kategori}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>{k.kategori}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>{formatUang(k.jumlah)}</span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 3, background: "var(--border)", overflow: "hidden" }}>
+                      <div style={{ width: ((k.jumlah / maxKat) * 100) + "%", height: "100%", background: "var(--accent)", borderRadius: 3 }} />
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </Card>
         </div>

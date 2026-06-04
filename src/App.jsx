@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense, lazy } from "react";
 import { supabase } from "./utils/supabase";
 import LoginScreen from "./screens/Login";
 
@@ -8,9 +8,9 @@ import Field from "./components/Field";
 import Icon  from "./components/Icon";
 import Toast from "./components/Toast";
 
-import HomeScreen       from "./screens/Home";
-import LaporanScreen    from "./screens/Laporan";
-import PengaturanScreen from "./screens/Pengaturan";
+const HomeScreen = lazy(() => import("./screens/Home"));
+const LaporanScreen = lazy(() => import("./screens/Laporan"));
+const PengaturanScreen = lazy(() => import("./screens/Pengaturan"));
 
 import { loadData, saveHarian, saveTransaksi, getCurrentDate, loadProfile } from "./utils/storage";
 import { calcHarian } from "./utils/calc";
@@ -162,6 +162,23 @@ export default function App() {
     };
     syncData();
   }, [isOnline, user]);
+
+  /* ─── Keyboard shortcuts ─── */
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        setModal("masuk");
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   /* ─── UI helpers ─── */
   const showToast = (msg, type = "success") => {
@@ -450,21 +467,43 @@ export default function App() {
         body { margin: 0; background: var(--bg); }
         input::placeholder { color: var(--text-muted); }
         ::-webkit-scrollbar { width: 0; }
+        :root { --cw: min(100vw, 480px); }
+        @media (min-width: 768px) { :root { --cw: min(100vw, 640px); } }
+        @media (min-width: 1024px) { :root { --cw: min(100vw, 800px); } }
+        .app-container {
+          max-width: var(--cw); margin: 0 auto; min-height: 100vh;
+          background: var(--bg); font-family: 'Inter', sans-serif; position: relative;
+        }
+        .app-offline-banner {
+          position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+          width: 100%; max-width: var(--cw); background: var(--warning);
+          z-index: 3000; padding: 8px 16px; text-align: center;
+          font-size: 12px; font-weight: 600; color: #fff;
+        }
+        .app-nav {
+          position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+          width: 100%; max-width: var(--cw); background: var(--navbar);
+          border-top: 1px solid var(--navbar-border); display: flex; z-index: 100;
+        }
+        .app-fab {
+          position: fixed; bottom: 84px;
+          right: calc((100vw - var(--cw)) / 2 + 20px);
+          display: flex; flex-direction: column; gap: 10px; z-index: 99;
+        }
       `}</style>
 
-      <div style={{ maxWidth: 440, margin: "0 auto", background: "var(--bg)", minHeight: "100vh", fontFamily: "'Inter', sans-serif", position: "relative" }}>
+      <div className="app-container">
         {toast && <Toast msg={toast.msg} type={toast.type} />}
         {!isOnline && (
-          <div style={{
-            position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)",
-            width: "100%", maxWidth: 440, background: "var(--warning)", zIndex: 3000,
-            padding: "8px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, color: "#fff",
-          }}>
+          <div className="app-offline-banner">
             Tidak ada koneksi internet
           </div>
         )}
 
         {/* ─── Screens ─── */}
+        <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: 60 }}>
+          <div style={{ width: 32, height: 32, border: "3px solid var(--border)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        </div>}>
         {tab === "home" && (
           <div key="home" className="page-transition">
             <HomeScreen
@@ -497,13 +536,10 @@ export default function App() {
             />
           </div>
         )}
+        </Suspense>
 
         {/* ─── Bottom nav ─── */}
-        <div style={{
-          position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
-          width: "100%", maxWidth: 440, background: "var(--navbar)",
-          borderTop: "1px solid var(--navbar-border)", display: "flex", zIndex: 100,
-        }}>
+        <div className="app-nav">
           {TABS.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
               flex: 1, background: "none", border: "none", cursor: "pointer",
@@ -520,10 +556,7 @@ export default function App() {
 
         {/* ─── FAB buttons ─── */}
         {tab === "home" && (
-          <div style={{
-            position: "fixed", bottom: 84, right: "calc(50% - 170px)",
-            display: "flex", flexDirection: "column", gap: 10, zIndex: 99,
-          }}>
+          <div className="app-fab">
             <button onClick={() => setModal("keluar")} style={{
               width: 50, height: 50, borderRadius: 16, background: "var(--danger)",
               border: "none", cursor: "pointer", display: "flex", alignItems: "center",
