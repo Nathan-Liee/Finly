@@ -86,8 +86,20 @@ npm run dev
 - ♿ Aria labels + modal accessibility
 - 🔔 Toast queue (gak tumpuk-tumpuk)
 
+### 2026-06-04 (lanjutan)
+- 🔍 Search/filter totals sekarang respect filter aktif
+- 🏷️ Filter pills (Semua/Masuk/Keluar, Semua/Cash/QRIS)
+- 📅 Reset transaksi per range tanggal
+- 📂 Kategori management — add/edit/delete di Pengaturan, dropdown di form transaksi
+- 📊 Kategori usage count di Pengaturan
+- 📈 Breakdown kategori di detail harian & bulanan (top 5)
+- ✏️ Edit uang awal lintas tanggal dari Laporan detail
+- 🗑️ Hapus semua transaksi per tanggal dari Laporan detail
+- 📁 Export CSV sekarang respect filter aktif
+- 🔢 Info bar filter count (X dari Y tanggal • Z transaksi)
+
 ---
 
 <p align="center">
-  Dibuat dengan ❤️ | Finly v1.10.0
+  Dibuat dengan ❤️ | Finly v1.12.5
 </p>
