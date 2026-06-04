@@ -289,6 +289,15 @@ export default function LaporanScreen({
           const monthName = new Date(year, month - 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
           const progressPct = maxMonthly > 0 ? (mTotal / maxMonthly) * 100 : 0;
 
+    const monthKat = {};
+          monthDates.forEach(tgl => {
+            (calc(tgl).transaksi ?? []).filter(t => t.type === "keluar").forEach(t => {
+              const k = t.kategori || "Lainnya";
+              monthKat[k] = (monthKat[k] || 0) + (t.jumlah || 0);
+            });
+          });
+          const katSorted = Object.entries(monthKat).sort((a, b) => b[1] - a[1]);
+
           return (
             <div key={monthKey} style={{
               background: "var(--surface)", border: "1px solid var(--border)",
@@ -317,6 +326,25 @@ export default function LaporanScreen({
                   background: "var(--gradient)", transition: "width 0.3s",
                 }} />
               </div>
+              {/* Kategori breakdown */}
+              {katSorted.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Top Kategori
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {katSorted.slice(0, 5).map(([k, v]) => (
+                      <div key={k} style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "4px 10px", background: "var(--input-bg)", borderRadius: 6,
+                      }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text)" }}>{k}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--danger)" }}>-{formatUang(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
