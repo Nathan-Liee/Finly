@@ -1,21 +1,32 @@
 # <p align="center"><img src="./public/logo.png" width="120" alt="Finly Logo"/><br/>Finly</p>
 
 <p align="center">
+  <strong>Finly</strong> — aplikasi kas PWA untuk UMKM mikro, toko kecil, bisnis keluarga, dan penggunaan pribadi.
+</p>
+
+<p align="center">
+  <a href="https://finly-mauve.vercel.app">🌐 Live Demo</a> ·
+  <a href="./KANBAN.md">📋 Kanban Board</a> ·
+  <a href="#-changelog">📝 Changelog</a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
   <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" />
   <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" />
   <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" />
 </p>
 
-<p align="center">
-  <strong>Finly</strong> — aplikasi kas PWA untuk UMKM mikro, toko kecil, bisnis keluarga, dan penggunaan pribadi.
-</p>
+---
 
-<p align="center">
-  <strong>🌐 Live:</strong> <a href="https://finly-mauve.vercel.app">finly-mauve.vercel.app</a>
-  ·
-  <strong>📱 Install:</strong> Buka di Chrome → Add to Home Screen
-</p>
+## 📊 Stats
+
+| | |
+|---|---|
+| **Version** | v1.13.1 |
+| **Live** | [finly-mauve.vercel.app](https://finly-mauve.vercel.app) |
+| **Build** | ![Build](https://img.shields.io/badge/build-passing-brightgreen) |
+| **License** | ![License](https://img.shields.io/badge/license-MIT-blue) |
 
 ---
 
