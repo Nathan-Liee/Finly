@@ -98,7 +98,7 @@ export default function LaporanScreen({
   data, today, dates, calc,
   selectedDate, setSelectedDate,
   modalOpen, setModal, closeModal,
-  onEditTx, onDeleteTx,
+  onEditTx, onDeleteTx, onDeleteAllTx,
   onEditUangAwal,
 }) {
   const [activeTab, setActiveTab] = useState("harian");
@@ -483,6 +483,27 @@ export default function LaporanScreen({
             {formatUang(c.saldoCash)}
           </span>
         </div>
+
+        {/* Hapus semua transaksi di tanggal ini */}
+        {c.transaksi.length > 0 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm(`Hapus semua ${c.transaksi.length} transaksi di ${new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}?`)) {
+                onDeleteAllTx?.(tgl);
+                closeModal?.();
+              }
+            }}
+            style={{
+              marginTop: 12, width: "100%", padding: "10px 14px", borderRadius: 10,
+              border: "1px solid var(--danger)", background: "transparent", color: "var(--danger)",
+              fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex",
+              alignItems: "center", justifyContent: "center", gap: 6,
+            }}
+          >
+            🗑️ Hapus Semua Transaksi
+          </button>
+        )}
       </div>
     );
   };

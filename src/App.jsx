@@ -440,6 +440,17 @@ export default function App() {
     setModal("konfirmHapus");
   }, [setHapusIdx, setSelectedDate, setModal, today]);
 
+  const handleDeleteAllTx = useCallback((tanggal) => {
+    setData(prev => {
+      const next = { ...prev };
+      if (next[tanggal]) {
+        next[tanggal] = { ...next[tanggal], transaksi: [] };
+      }
+      try { localStorage.setItem("finly-data", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [setData]);
+
   const updateKategoriList = useCallback((newList) => {
     setKategoriList(newList);
     try { localStorage.setItem("finly-kategori", JSON.stringify(newList)); } catch {}
@@ -574,6 +585,7 @@ export default function App() {
               selectedDate={selectedDate} setSelectedDate={setSelectedDate}
               modalOpen={modal} setModal={setModal} closeModal={closeModal}
               onEditTx={handleEditTx} onDeleteTx={handleDeleteTx}
+              onDeleteAllTx={handleDeleteAllTx}
               onEditUangAwal={(tgl) => { setUbahTarget(tgl); setFormUangAwal(String(data[tgl]?.uang_awal ?? "0")); setModal("ubahAwal"); }}
             />
           </div>
