@@ -1,12 +1,15 @@
-/* ─── Kasapp Service Worker ───
+/* ─── Finly Service Worker ───
  * Basic caching for offline support.
  * Caches static assets; network-first for API calls.
  */
-const CACHE_NAME = 'kasapp-v1';
+const CACHE_NAME = 'finly-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/favicon.svg',
+  '/logo.svg',
+  '/app-icon.svg',
+  '/splash-screen.html',
   '/manifest.json',
 ];
 

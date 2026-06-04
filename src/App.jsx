@@ -271,15 +271,16 @@ export default function App() {
   const doHapus = async () => {
     if (isSubmitting || hapusIdx === null) return;
     setIsSubmitting(true);
+    const tgl = selectedDate || today;
     try {
       const d = { ...data };
-      if (!d[today]?.transaksi) return closeModal();
-      const updatedTx = d[today].transaksi.filter((_, i) => i !== hapusIdx);
-      d[today].transaksi = updatedTx;
+      if (!d[tgl]?.transaksi) return closeModal();
+      const updatedTx = d[tgl].transaksi.filter((_, i) => i !== hapusIdx);
+      d[tgl].transaksi = updatedTx;
       setData({ ...d });
-      await saveTransaksiLocal(today, updatedTx);
-      if (isOnline) { try { await saveTransaksi(today, updatedTx); } catch { /* offline */ } }
-      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: updatedTx }); }
+      await saveTransaksiLocal(tgl, updatedTx);
+      if (isOnline) { try { await saveTransaksi(tgl, updatedTx); } catch { /* offline */ } }
+      else { await addToSyncQueue('transaksi', { tanggal: tgl, transaksi: updatedTx }); }
       closeModal();
       showToast("Transaksi dihapus!", "info");
     } catch { showToast("Gagal menghapus!", "error"); }
@@ -328,20 +329,21 @@ export default function App() {
     const n = parseInt(cleanNumber(formEditJumlah));
     if (isNaN(n) || n <= 0) return showToast("Jumlah harus lebih dari 0!", "error");
     setIsSubmitting(true);
+    const tgl = selectedDate || today;
     try {
       const d = { ...data };
-      const t = d[today]?.transaksi?.[editIdx];
+      const t = d[tgl]?.transaksi?.[editIdx];
       if (!t) return closeModal();
-      const updatedTx = d[today].transaksi.map((item, i) =>
+      const updatedTx = d[tgl].transaksi.map((item, i) =>
         i === editIdx
           ? { ...item, jumlah: n, ...(t.type === "masuk" ? { metode: formEditMetode } : { kategori: formEditKategori || "Lainnya", catatan: formEditCatatan || "-" }) }
           : item
       );
-      d[today].transaksi = updatedTx;
+      d[tgl].transaksi = updatedTx;
       setData({ ...d });
-      await saveTransaksiLocal(today, updatedTx);
-      if (isOnline) { try { await saveTransaksi(today, updatedTx); } catch { /* offline */ } }
-      else { await addToSyncQueue('transaksi', { tanggal: today, transaksi: updatedTx }); }
+      await saveTransaksiLocal(tgl, updatedTx);
+      if (isOnline) { try { await saveTransaksi(tgl, updatedTx); } catch { /* offline */ } }
+      else { await addToSyncQueue('transaksi', { tanggal: tgl, transaksi: updatedTx }); }
       closeModal();
       showToast("Transaksi diperbarui!");
     } catch { showToast("Gagal memperbarui!", "error"); }
@@ -354,21 +356,24 @@ export default function App() {
   const calc = useCallback((tanggal) => safeCalc(data[tanggal]), [data]);
 
   /* Stable callbacks for HomeScreen — MUST be before conditional returns */
-  const handleEditTx = useCallback((idx) => {
+  const handleEditTx = useCallback((idx, tanggal) => {
+    const tgl = tanggal || today;
     setEditIdx(idx);
-    const t = data[today]?.transaksi?.[idx];
+    const t = data[tgl]?.transaksi?.[idx];
     if (!t) return;
     setFormEditJumlah(String(t.jumlah ?? ""));
     setFormEditMetode(t.metode || "cash");
     setFormEditKategori(t.kategori || "");
     setFormEditCatatan(t.catatan || "");
+    setSelectedDate(tgl);
     setModal("editTransaksi");
-  }, [data, today, setEditIdx, setFormEditJumlah, setFormEditMetode, setFormEditKategori, setFormEditCatatan, setModal]);
+  }, [data, today, setEditIdx, setFormEditJumlah, setFormEditMetode, setFormEditKategori, setFormEditCatatan, setSelectedDate, setModal]);
 
-  const handleDeleteTx = useCallback((idx) => {
+  const handleDeleteTx = useCallback((idx, tanggal) => {
     setHapusIdx(idx);
+    setSelectedDate(tanggal || today);
     setModal("konfirmHapus");
-  }, [setHapusIdx, setModal]);
+  }, [setHapusIdx, setSelectedDate, setModal, today]);
 
   /* ─── Loading screen ─── */
   if (authLoading) return (
@@ -477,6 +482,7 @@ export default function App() {
               data={data} today={today} dates={dates} calc={calc}
               selectedDate={selectedDate} setSelectedDate={setSelectedDate}
               modalOpen={modal} setModal={setModal} closeModal={closeModal}
+              onEditTx={handleEditTx} onDeleteTx={handleDeleteTx}
             />
           </div>
         )}
@@ -622,8 +628,8 @@ export default function App() {
         </Modal>
 
         {/* Konfirmasi hapus */}
-        <Modal show={modal === "konfirmHapus"} onClose={closeModal} title="Konfirmasi Hapus">
-          {hapusIdx !== null && todayData.transaksi?.[hapusIdx] && (
+        <Modal show={modal === "konfirmHapus"} onClose={closeModal} title={`Hapus Transaksi${selectedDate && selectedDate !== today ? ` — ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}` : ''}`}>
+          {hapusIdx !== null && (data[selectedDate || today]?.transaksi?.[hapusIdx]) && (
             <div>
               <p style={{ color: "var(--text-secondary)", fontSize: 13, margin: "0 0 16px" }}>
                 Yakin ingin menghapus transaksi ini?
@@ -637,9 +643,9 @@ export default function App() {
         </Modal>
 
         {/* Edit transaksi */}
-        <Modal show={modal === "editTransaksi"} onClose={closeModal} title="Edit Transaksi">
-          {editIdx !== null && todayData.transaksi?.[editIdx] && (() => {
-            const t = todayData.transaksi[editIdx];
+        <Modal show={modal === "editTransaksi"} onClose={closeModal} title={`Edit Transaksi${selectedDate && selectedDate !== today ? ` — ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}` : ''}`}>
+          {editIdx !== null && (data[selectedDate || today]?.transaksi)?.[editIdx] && (() => {
+            const t = (data[selectedDate || today]?.transaksi)?.[editIdx];
             return (
               <div>
                 <Field label="Jumlah" value={formEditJumlah} onChange={handleFormEditJumlahChange} type="number" placeholder="0" prefix="Rp"

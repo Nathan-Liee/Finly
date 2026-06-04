@@ -29,6 +29,16 @@
   --color-accent-hover: #5A6AE5;
   --color-accent-subtle: rgba(107, 126, 255, 0.08);
   --color-accent-border: rgba(107, 126, 255, 0.2);
+  --color-accent-light: #8F9DFF;
+  --color-accent-dark: #3B4ADB;
+
+  /* Brand palette (refined) */
+  --color-brand-primary: #6B7EFF;
+  --color-brand-secondary: #4A5AE7;
+  --color-brand-gradient-start: #6B7EFF;
+  --color-brand-gradient-end: #4A5AE7;
+  --color-brand-growth: #10B981;
+  --color-brand-growth-subtle: rgba(16, 185, 129, 0.08);
 
   /* Semantic */
   --color-success: #10B981;
@@ -47,6 +57,8 @@
   --color-navbar-border: #E5E7EB;
   --color-tab-inactive: #9CA3AF;
   --gradient-primary: linear-gradient(135deg, #6B7EFF 0%, #4A5AE7 100%);
+  --gradient-refined: linear-gradient(135deg, #6B7EFF 0%, #4A5AE7 50%, #3B4ADB 100%);
+  --gradient-growth: linear-gradient(135deg, #10B981 0%, #059669 100%);
 
   /* Shadows */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -161,6 +173,8 @@
   --color-accent-hover: #8090FF;
   --color-accent-subtle: rgba(107, 126, 255, 0.12);
   --color-accent-border: rgba(107, 126, 255, 0.25);
+  --color-accent-light: #8F9DFF;
+  --color-accent-dark: #3B4ADB;
 
   /* Semantic */
   --color-success: #34D399;

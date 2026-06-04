@@ -98,6 +98,7 @@ export default function LaporanScreen({
   data, today, dates, calc,
   selectedDate, setSelectedDate,
   modalOpen, setModal, closeModal,
+  onEditTx, onDeleteTx,
 }) {
   const [activeTab, setActiveTab] = useState("harian");
   const [searchQuery, setSearchQuery] = useState("");
@@ -377,12 +378,30 @@ export default function LaporanScreen({
                     {t.catatan && t.catatan !== "-" ? t.catatan : (t.metode?.toUpperCase() || "")}
                   </p>
                 </div>
-                <p style={{
-                  margin: 0, fontSize: 13, fontWeight: 800,
-                  color: t.type === "masuk" ? "var(--success)" : "var(--danger)",
-                }}>
-                  {t.type === "masuk" ? "+" : "-"}{formatUang(t.jumlah)}
-                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <p style={{
+                    margin: 0, fontSize: 13, fontWeight: 800,
+                    color: t.type === "masuk" ? "var(--success)" : "var(--danger)",
+                  }}>
+                    {t.type === "masuk" ? "+" : "-"}{formatUang(t.jumlah)}
+                  </p>
+                  <button onClick={(e) => { e.stopPropagation(); onEditTx?.(i, tgl); closeModal?.(); }} style={{
+                    width: 28, height: 28, borderRadius: 8, border: "none",
+                    background: "var(--accent-subtle)", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0, marginLeft: 4,
+                  }}>
+                    ✏️
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); onDeleteTx?.(i, tgl); closeModal?.(); }} style={{
+                    width: 28, height: 28, borderRadius: 8, border: "none",
+                    background: "var(--danger-subtle)", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0,
+                  }}>
+                    🗑️
+                  </button>
+                </div>
               </div>
             ))}
           </div>
