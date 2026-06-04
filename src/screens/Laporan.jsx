@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Card from "../components/Card";
 import Icon from "../components/Icon";
 import { formatUang } from "../utils/format";
@@ -105,6 +105,11 @@ export default function LaporanScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all"); // all | masuk | keluar
   const [filterMetode, setFilterMetode] = useState("all"); // all | cash | qris
+
+  /* ─── Scroll to top on tab/filter change ─── */
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeTab, searchQuery, filterType, filterMetode]);
 
   /* ─── Search filter ─── */
   const filteredDates = searchQuery.trim()
