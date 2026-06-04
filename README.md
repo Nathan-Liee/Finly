@@ -5,17 +5,16 @@
   <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" />
   <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" />
   <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" />
-  <img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" />
 </p>
 
 <p align="center">
-  <strong>Finly</strong> — aplikasi kas sederhana untuk UMKM mikro, toko kecil, bisnis keluarga, dan penggunaan pribadi.
+  <strong>Finly</strong> — aplikasi kas PWA untuk UMKM mikro, toko kecil, bisnis keluarga, dan penggunaan pribadi.
 </p>
 
 <p align="center">
   <strong>🌐 Live:</strong> <a href="https://finly-mauve.vercel.app">finly-mauve.vercel.app</a>
   ·
-  <strong>📲 Android:</strong> <a href="https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.5-android">Download APK</a>
+  <strong>📱 Install:</strong> Buka di Chrome → Add to Home Screen
 </p>
 
 ---
@@ -26,28 +25,19 @@
 - 📥📤 **Pemasukan & Pengeluaran** — Catat arus kas harian dengan kategori dan catatan.
 - 💵 **Cash & QRIS** — Tracking metode pembayaran: tunai atau QRIS.
 - 💰 **Saldo Awal** — Mulai pencatatan dari saldo awal yang Anda tentukan.
-- 📊 **Laporan** — Rekap harian, mingguan, dan bulanan dengan filter rentang tanggal.
-- 📁 **Export CSV** — Unduh laporan lengkap dalam format CSV.
+- 📊 **Dashboard** — Ringkasan saldo, grafik pemasukan vs pengeluaran, spending trend.
+- 📅 **Laporan** — Rekap harian, mingguan, dan bulanan dengan filter rentang tanggal dan jenis transaksi.
+- ✏️ **Edit Transaksi** — Ubah atau hapus transaksi dari tanggal kapan pun.
+- 🎨 **Dark Mode** — Toggle tema gelap/terang.
+- 🖥️ **Desktop Layout** — Sidebar navigasi, multi-column untuk layar lebar.
+- ⌨️ **Keyboard Shortcuts** — `N` tambah transaksi, `ESC` tutup modal.
+- 📁 **Export CSV** — Unduh laporan dalam format CSV.
+- 📱 **PWA** — Install sebagai aplikasi di HP/desktop, offline support.
+- 🔄 **Auto-sync** — Data tetap aman meski offline, sync saat online.
 - 📈 **Dashboard Analytics** — Ringkasan semua waktu: total masuk, keluar, saldo bersih.
 - 💬 **Keluhan & Masukan** — Kirim bug report atau saran fitur langsung dari aplikasi.
 - 🔒 **Data Aman** — Row Level Security menjaga data setiap user tetap terpisah.
-- 📱 **Responsive** — Nyaman digunakan di desktop maupun mobile.
-- 📲 **Android APK** — Tersedia di [GitHub Releases](https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.5-android).
-
 ## 📸 Preview
-
-<p align="center">
-  <img src="./public/screenshots/home-mockup.png" width="300" alt="Finly Home Screen"/>
-</p>
-
-## 📲 Download Android
-
-APK Android Finly dapat diunduh melalui GitHub Releases:
-
-- [**Download Finly APK**](https://github.com/Nathan-Liee/Finly/releases/download/v1.0.5-android/Finly-v1.0.5-debug.apk) (v1.0.5-debug, 14.85 MB)
-- [View Release Page](https://github.com/Nathan-Liee/Finly/releases/tag/v1.0.5-android)
-
-## 💬 Feedback System
 
 Pengguna dapat mengirim laporan bug, keluhan, atau saran fitur melalui form **Keluhan & Masukan** di dalam aplikasi. Feedback tersimpan di Supabase dan ditinjau secara internal oleh developer.
 
@@ -57,7 +47,6 @@ Pengguna dapat mengirim laporan bug, keluhan, atau saran fitur melalui form **Ke
 |-------|-----------|
 | **Frontend** | React, Vite |
 | **Backend** | Supabase (PostgreSQL, Auth, RLS) |
-| **Mobile** | Capacitor (Android APK) |
 | **Deployment** | Vercel |
 
 ## 🗄️ Database
@@ -79,18 +68,26 @@ npm install
 npm run dev
 ```
 
-## 🗺️ Roadmap
+## 📋 Changelog
 
-- [ ] Edit transaksi lintas tanggal
-- [ ] Reset transaksi per tanggal
-- [ ] Search/filter transaksi lanjutan
-- [ ] Offline mode & auto sync improvement
-- [ ] UI/UX redesign final
-- [ ] Signed Android release build
-- [ ] PWA support jika dependency sudah kompatibel
+> Changelog otomatis diperbarui setiap hari oleh AI agent.
+
+### 2026-06-04
+- 🖥️ Desktop responsive layout + sidebar navigasi
+- 🎨 Dark mode toggle
+- 📊 Grafik dashboard pemasukan vs pengeluaran
+- ⌨️ Keyboard shortcuts (N=add, ESC=close)
+- 🔍 Bundle splitting (lazy load per screen)
+- 🔒 Hapus admin.deleteUser dari client — diganti hubungi admin
+- 🔒 .env dilindungi .gitignore
+- 💰 Fix saldoCash calculation — bedain cash vs qris expenses
+- 📊 CSV injection protection
+- 🎨 Google Fonts pindah ke index.html (render blocking fix)
+- ♿ Aria labels + modal accessibility
+- 🔔 Toast queue (gak tumpuk-tumpuk)
 
 ---
 
 <p align="center">
-  Dibuat dengan ❤️ untuk manajemen keuangan yang lebih baik.
+  Dibuat dengan ❤️ | Finly v1.10.0
 </p>
