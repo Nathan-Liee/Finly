@@ -164,7 +164,7 @@ export default function LaporanScreen({
     lines.push([esc("Saldo Bersih"), saldoBersih].join(","));
     lines.push("");
     lines.push([esc("Tanggal"), esc("Tipe"), esc("Metode"), esc("Kategori"), esc("Catatan"), esc("Jumlah")].join(","));
-    dates.forEach(tgl => {
+    filteredDates.forEach(tgl => {
       const c = calc(tgl);
       c.transaksi?.forEach(t => {
         lines.push([
