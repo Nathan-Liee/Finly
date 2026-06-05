@@ -7,6 +7,7 @@ import Btn   from "./components/Button";
 import Field from "./components/Field";
 import Icon  from "./components/Icon";
 import Toast from "./components/Toast";
+import RecurringForm from "./components/RecurringForm";
 
 const HomeScreen = lazy(() => import("./screens/Home"));
 const LaporanScreen = lazy(() => import("./screens/Laporan"));
@@ -538,7 +539,7 @@ export default function App() {
   const dates = Object.keys(data).sort((a, b) => b.localeCompare(a));
   const calc = useCallback((tanggal) => safeCalc(data[tanggal]), [data]);
 
-  /* Stable callbacks for HomeScreen — MUST be before conditional returns */
+  /* Stable callbacks — MUST be before conditional returns */
   const handleEditTx = useCallback((idx, tanggal) => {
     const tgl = tanggal || today;
     setEditIdx(idx);
@@ -574,75 +575,7 @@ export default function App() {
     try { localStorage.setItem("finly-kategori", JSON.stringify(newList)); } catch {}
   }, []);
 
-  /* ─── Loading screen ─── */
-  if (authLoading) return (
-    <div style={{
-      minHeight: "100vh",
-      background: "var(--bg)",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 24,
-      padding: 20,
-      textAlign: "center"
-    }}>
-      <div className="pulse-logo" style={{
-        width: 90,
-        height: 90,
-        borderRadius: 24,
-        background: "var(--surface)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-        overflow: "hidden"
-      }}>
-        <img src="/logo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.05)" }} />
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <h2 style={{ color: "var(--text)", fontSize: 22, fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>Finly</h2>
-        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-          {[0,1,2].map(i => (
-            <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", animation: `bounce 1s ease-in-out ${i * 0.2}s infinite` }}/>
-          ))}
-        </div>
-      </div>
-      <style>{`
-        @keyframes bounce { 0%,100%{transform:translateY(0);opacity:.3} 50%{transform:translateY(-6px);opacity:1} }
-        .pulse-logo { animation: pulse-logo 2s infinite ease-in-out; }
-        @keyframes pulse-logo { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.9; } }
-      `}</style>
-    </div>
-  );
-
-  /* ─── Login screen ─── */
-  if (!user) return (
-    <LoginScreen onLogin={async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-        if (user) {
-          const fb = user.user_metadata?.username || user.email?.split('@')?.[0] || 'user';
-          try {
-            const { data: existingProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            if (!existingProfile) await supabase.from('profiles').insert({ id: user.id, username: fb, email: user.email });
-            else if (!existingProfile.username) await supabase.from('profiles').update({ username: fb }).eq('id', user.id);
-          } catch { /* skip */ }
-          try { setProfile(await loadProfile()); } catch { setProfile(null); }
-          try {
-            const d = await loadData();
-            setData(d || {});
-            if (!(d || {})[getCurrentDate()]) setModal("setup");
-          } catch { setData({}); setModal("setup"); }
-        }
-      } catch (err) { showToast("Login gagal: " + (err.message || "Unknown"), "error"); }
-    }} />
-  );
-
-  /* ─── Main app ─── */
-
-  /* ─── Export helpers ─── */
+  /* ─── Export helpers (moved BEFORE early returns to avoid hook count mismatch) ─── */
   const getAllExportData = useCallback((filterDates) => {
     const allDates = filterDates && filterDates.length > 0
       ? filterDates : Object.keys(data).sort((a, b) => b.localeCompare(a));
@@ -713,6 +646,74 @@ export default function App() {
       showToast("Gagal export Excel: " + (e.message || e), "error");
     }
   }, [data, today, getAllExportData, closeModal, showToast]);
+
+  /* ─── Loading screen ─── */
+  if (authLoading) return (
+    <div style={{
+      minHeight: "100vh",
+      background: "var(--bg)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 24,
+      padding: 20,
+      textAlign: "center"
+    }}>
+      <div className="pulse-logo" style={{
+        width: 90,
+        height: 90,
+        borderRadius: 24,
+        background: "var(--surface)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+        overflow: "hidden"
+      }}>
+        <img src="/logo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.05)" }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <h2 style={{ color: "var(--text)", fontSize: 22, fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>Finly</h2>
+        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", animation: `bounce 1s ease-in-out ${i * 0.2}s infinite` }}/>
+          ))}
+        </div>
+      </div>
+      <style>{`
+        @keyframes bounce { 0%,100%{transform:translateY(0);opacity:.3} 50%{transform:translateY(-6px);opacity:1} }
+        .pulse-logo { animation: pulse-logo 2s infinite ease-in-out; }
+        @keyframes pulse-logo { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.9; } }
+      `}</style>
+    </div>
+  );
+
+  /* ─── Login screen ─── */
+  if (!user) return (
+    <LoginScreen onLogin={async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        if (user) {
+          const fb = user.user_metadata?.username || user.email?.split('@')?.[0] || 'user';
+          try {
+            const { data: existingProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            if (!existingProfile) await supabase.from('profiles').insert({ id: user.id, username: fb, email: user.email });
+            else if (!existingProfile.username) await supabase.from('profiles').update({ username: fb }).eq('id', user.id);
+          } catch { /* skip */ }
+          try { setProfile(await loadProfile()); } catch { setProfile(null); }
+          try {
+            const d = await loadData();
+            setData(d || {});
+            if (!(d || {})[getCurrentDate()]) setModal("setup");
+          } catch { setData({}); setModal("setup"); }
+        }
+      } catch (err) { showToast("Login gagal: " + (err.message || "Unknown"), "error"); }
+    }} />
+  );
+
+  /* ─── Main app ─── */
 
   /* ─── Import helpers ─── */
   const handleOpenImport = () => {
@@ -1275,151 +1276,13 @@ export default function App() {
         </Modal>
 
         {/* ─── Recurring Transaction Form ─── */}
-        <Modal show={modal === "tambahRecurring"} onClose={closeModal} title="Transaksi Berulang">
-          {(() => {
-            const [recFrequency, setRecFrequency] = useState("monthly");
-            const [recDayOfWeek, setRecDayOfWeek] = useState(1);
-            const [recDayOfMonth, setRecDayOfMonth] = useState(1);
-            const [recType, setRecType] = useState("keluar");
-            const [recJumlah, setRecJumlah] = useState("");
-            const [recMetode, setRecMetode] = useState("cash");
-            const [recKategori, setRecKategori] = useState("");
-            const [recCatatan, setRecCatatan] = useState("");
-            const [recSaved, setRecSaved] = useState(false);
-            const handleRecSave = () => {
-              const n = parseInt(recJumlah.replace(/\./g, ""));
-              if (!n || n <= 0) return showToast("Jumlah harus lebih dari 0!", "error");
-              if (recType === "keluar" && !recKategori) return showToast("Pilih kategori!", "error");
-              const rule = {
-                frequency: recFrequency,
-                type: recType,
-                jumlah: n,
-                metode: recMetode,
-                kategori: recType === "keluar" ? recKategori : "",
-                catatan: recCatatan || "-",
-              };
-              if (recFrequency === "weekly") rule.dayOfWeek = recDayOfWeek;
-              if (recFrequency === "monthly") rule.dayOfMonth = recDayOfMonth;
-              addRecurringRule(rule);
-              setRecSaved(true);
-              setTimeout(() => { closeModal(); setRecSaved(false); }, 1000);
-              showToast("Aturan berulang ditambahkan!", "success");
-            };
-            return (
-              <div>
-                {/* Tipe */}
-                <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Tipe</label>
-                <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-                  {["masuk", "keluar"].map(m => (
-                    <button key={m} onClick={() => setRecType(m)} style={{
-                      flex: 1, padding: "10px", borderRadius: 10,
-                      border: `2px solid ${recType === m ? "var(--accent)" : "var(--border)"}`,
-                      background: recType === m ? "var(--accent-subtle)" : "var(--surface)",
-                      color: recType === m ? "var(--accent)" : "var(--text-secondary)",
-                      fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
-                    }}>
-                      {m === "masuk" ? "Pemasukan" : "Pengeluaran"}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Jumlah */}
-                <Field label="Jumlah" value={recJumlah} onChange={(v) => setRecJumlah(formatAngka(v ?? ""))} type="number" placeholder="0" prefix="Rp" />
-
-                {/* Metode */}
-                <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Metode</label>
-                <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-                  {["cash", "qris"].map(m => (
-                    <button key={m} onClick={() => setRecMetode(m)} style={{
-                      flex: 1, padding: "10px", borderRadius: 10,
-                      border: `2px solid ${recMetode === m ? "var(--accent)" : "var(--border)"}`,
-                      background: recMetode === m ? "var(--accent-subtle)" : "var(--surface)",
-                      color: recMetode === m ? "var(--accent)" : "var(--text-secondary)",
-                      fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
-                    }}>
-                      {m.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Kategori (only for keluar) */}
-                {recType === "keluar" && (
-                  <>
-                    <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Kategori</label>
-                    <select value={recKategori} onChange={(e) => setRecKategori(e.target.value)}
-                      style={{
-                        width: "100%", padding: "10px 14px", borderRadius: 10,
-                        border: "1px solid var(--border)", background: "var(--input-bg)",
-                        color: recKategori ? "var(--text)" : "var(--text-muted)",
-                        fontSize: 13, fontFamily: "'Inter', sans-serif", outline: "none", marginBottom: 16,
-                      }}>
-                      <option value="">Pilih kategori</option>
-                      {kategoriList.map(k => <option key={k} value={k}>{k}</option>)}
-                    </select>
-                  </>
-                )}
-
-                {/* Frekuensi */}
-                <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Frekuensi</label>
-                <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-                  {[
-                    { key: "daily", label: "Harian" },
-                    { key: "weekly", label: "Mingguan" },
-                    { key: "monthly", label: "Bulanan" },
-                  ].map(f => (
-                    <button key={f.key} onClick={() => setRecFrequency(f.key)} style={{
-                      flex: 1, padding: "10px", borderRadius: 10,
-                      border: `2px solid ${recFrequency === f.key ? "var(--accent)" : "var(--border)"}`,
-                      background: recFrequency === f.key ? "var(--accent-subtle)" : "var(--surface)",
-                      color: recFrequency === f.key ? "var(--accent)" : "var(--text-secondary)",
-                      fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
-                    }}>
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Day pickers */}
-                {recFrequency === "weekly" && (
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Hari</label>
-                    <select value={recDayOfWeek} onChange={(e) => setRecDayOfWeek(Number(e.target.value))}
-                      style={{
-                        width: "100%", padding: "10px 14px", borderRadius: 10,
-                        border: "1px solid var(--border)", background: "var(--input-bg)",
-                        color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif", outline: "none",
-                      }}>
-                      {["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"].map((d, i) => (
-                        <option key={i} value={i}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                {recFrequency === "monthly" && (
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Tanggal (1-31)</label>
-                    <input type="number" min={1} max={31} value={recDayOfMonth} onChange={(e) => setRecDayOfMonth(Math.min(31, Math.max(1, parseInt(e.target.value) || 1)))}
-                      style={{
-                        width: "100%", padding: "10px 14px", borderRadius: 10,
-                        border: "1px solid var(--border)", background: "var(--input-bg)",
-                        color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif", outline: "none",
-                      }} />
-                  </div>
-                )}
-
-                {/* Catatan */}
-                <Field label="Catatan (opsional)" value={recCatatan} onChange={setRecCatatan} placeholder="Auto-generated if empty" />
-
-                {/* Save */}
-                <div style={{ marginTop: 16 }}>
-                  <Btn onClick={handleRecSave} icon="check" fullWidth>
-                    {recSaved ? "✓ Disimpan!" : "Simpan Aturan Berulang"}
-                  </Btn>
-                </div>
-              </div>
-            );
-          })()}
-        </Modal>
+        <RecurringForm
+          show={modal === "tambahRecurring"}
+          onClose={closeModal}
+          kategoriList={kategoriList}
+          addRecurringRule={addRecurringRule}
+          showToast={showToast}
+        />
 
         {/* Export data */}
         <Modal show={modal === "export"} onClose={closeModal} title="Export Data">
