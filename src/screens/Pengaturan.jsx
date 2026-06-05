@@ -5,6 +5,8 @@ import { formatUang } from "../utils/format";
 import { updateProfile, updatePassword, getDisplayName } from "../utils/storage";
 import { insertFeedback, getFeedbackList, updateFeedbackStatus } from "../utils/supabase-feedback";
 import { toggleTheme } from "../theme";
+import KategoriManager from "../components/KategoriManager";
+import BudgetManager from "../components/BudgetManager";
 
 /* ═══════════════════════════════════════════
  *  PENGATURAN SCREEN — NEW LAYOUT
@@ -875,123 +877,11 @@ export default function PengaturanScreen({
         </div>
       )}
 
-      {/* ═══════════════════════════════════════ */}
-      {/*  KATEGORI                                */}
-      {/* ═══════════════════════════════════════ */}
-      {(() => {
-        const [showAdd, setShowAdd] = useState(false);
-        const [newKat, setNewKat] = useState("");
-        const [editIdx, setEditIdx] = useState(null);
-        const [editVal, setEditVal] = useState("");
-        const handleAdd = () => {
-          const trimmed = newKat.trim();
-          if (!trimmed || kategoriList.includes(trimmed)) return;
-          onUpdateKategori([...kategoriList, trimmed]);
-          setNewKat(""); setShowAdd(false);
-        };
-        const handleDelete = (idx) => {
-          const updated = kategoriList.filter((_, i) => i !== idx);
-          onUpdateKategori(updated);
-        };
-        const handleEdit = (idx) => {
-          const trimmed = editVal.trim();
-          if (!trimmed || kategoriList.includes(trimmed)) return;
-          const updated = kategoriList.map((k, i) => i === idx ? trimmed : k);
-          onUpdateKategori(updated);
-          setEditIdx(null); setEditVal("");
-        };
-        return (
-          <>
-            <SectionHeader title="Kategori" />
-            <SettingsCard>
-              {kategoriList.map((k, i) => (
-                <div key={i}>
-                  {i > 0 && <Divider />}
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px" }}>
-                    {editIdx === i ? (
-                      <div style={{ flex: 1, display: "flex", gap: 6 }}>
-                        <input value={editVal} onChange={e => setEditVal(e.target.value)}
-                          onKeyDown={e => { if (e.key === "Enter") handleEdit(i); }}
-                          style={{
-                            flex: 1, padding: "8px 12px", borderRadius: 8,
-                            border: "1px solid var(--border)", background: "var(--input-bg)",
-                            color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif",
-                            outline: "none",
-                          }} />
-                        <button onClick={() => handleEdit(i)} style={{
-                          padding: "8px 12px", borderRadius: 8, border: "none",
-                          background: "var(--accent)", color: "#fff", fontSize: 12,
-                          fontWeight: 700, cursor: "pointer",
-                        }}>Simpan</button>
-                        <button onClick={() => setEditIdx(null)} style={{
-                          padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)",
-                          background: "var(--surface)", color: "var(--text-secondary)", fontSize: 12,
-                          fontWeight: 600, cursor: "pointer",
-                        }}>Batal</button>
-                      </div>
-                    ) : (
-                      <>
-                        <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text)" }}>{k}</span>
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, color: "var(--text-muted)",
-                          background: "var(--input-bg)", padding: "2px 8px", borderRadius: 6,
-                        }}>
-                          {Object.keys(data).reduce((s, tgl) => s + (data[tgl]?.transaksi?.filter(t => t.type === "keluar" && t.kategori === k).length ?? 0), 0)}x
-                        </span>
-                        <button onClick={() => { setEditIdx(i); setEditVal(k); }} style={{
-                          width: 28, height: 28, borderRadius: 8, border: "none",
-                          background: "var(--accent-subtle)", cursor: "pointer", display: "flex",
-                          alignItems: "center", justifyContent: "center", fontSize: 12,
-                        }}>✏️</button>
-                        {k !== "Lainnya" && (
-                          <button onClick={() => handleDelete(i)} style={{
-                            width: 28, height: 28, borderRadius: 8, border: "none",
-                            background: "var(--danger-subtle)", cursor: "pointer", display: "flex",
-                            alignItems: "center", justifyContent: "center", fontSize: 12,
-                          }}>🗑️</button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {showAdd ? (
-                <div style={{ padding: "10px 16px", display: "flex", gap: 6 }}>
-                  <input value={newKat} onChange={e => setNewKat(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") handleAdd(); }}
-                    placeholder="Nama kategori baru"
-                    style={{
-                      flex: 1, padding: "8px 12px", borderRadius: 8,
-                      border: "1px solid var(--border)", background: "var(--input-bg)",
-                      color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif",
-                      outline: "none",
-                    }} />
-                  <button onClick={handleAdd} style={{
-                    padding: "8px 12px", borderRadius: 8, border: "none",
-                    background: "var(--success)", color: "#fff", fontSize: 12,
-                    fontWeight: 700, cursor: "pointer",
-                  }}>Tambah</button>
-                  <button onClick={() => setShowAdd(false)} style={{
-                    padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)",
-                    background: "var(--surface)", color: "var(--text-secondary)", fontSize: 12,
-                    fontWeight: 600, cursor: "pointer",
-                  }}>Batal</button>
-                </div>
-              ) : (
-                <div style={{ padding: "10px 16px" }}>
-                  <button onClick={() => setShowAdd(true)} style={{
-                    width: "100%", padding: "10px", borderRadius: 10, border: "1px dashed var(--border)",
-                    background: "var(--surface)", color: "var(--accent)", fontSize: 13,
-                    fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif",
-                  }}>
-                    + Tambah Kategori
-                  </button>
-                </div>
-              )}
-            </SettingsCard>
-          </>
-        );
-      })()}
+      <KategoriManager
+        kategoriList={kategoriList}
+        onUpdateKategori={onUpdateKategori}
+        data={data}
+      />
 
       {/* ═══════════════════════════════════════ */}
       {/*  DATA & PRIVASI                          */}
@@ -1017,124 +907,12 @@ export default function PengaturanScreen({
         />
       </SettingsCard>
 
-      {/* ═══════════════════════════════════════ */}
-      {/*  BUDGET BULANAN                          */}
-      {/* ═══════════════════════════════════════ */}
-      {(() => {
-        const now = new Date();
-        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-        const budgetData = budgetMap[currentMonthKey] ?? {};
-        const [budgetInput, setBudgetInput] = useState(String(typeof budgetData === 'object' ? (budgetData._total || '') : ''));
-        const [budgetSaved, setBudgetSaved] = useState(false);
-        const [katBudgetInputs, setKatBudgetInputs] = useState({});
-        const currentTotalBudget = typeof budgetData === 'object' ? (budgetData._total || 0) : 0;
-        // Compute current spending per kategori
-        const spentMap = {};
-        Object.keys(data).forEach(tgl => {
-          if (tgl.startsWith(currentMonthKey)) {
-            (data[tgl]?.transaksi ?? []).forEach(t => {
-              if (t.type === 'keluar') {
-                const k = t.kategori || 'Lainnya';
-                spentMap[k] = (spentMap[k] || 0) + (t.jumlah || 0);
-              }
-            });
-          }
-        });
-        return (
-          <>
-            <SectionHeader title="Budget Bulanan" />
-            <SettingsCard>
-              <div style={{ padding: "12px 16px" }}>
-                <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--text-muted)" }}>
-                  Set budget pengeluaran untuk bulan ini. Bisa total atau per kategori.
-                </p>
-                {/* Total budget */}
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" }}>Total Rp</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="0"
-                    value={budgetInput}
-                    onChange={(e) => { setBudgetInput(e.target.value.replace(/[^0-9]/g, "")); setBudgetSaved(false); }}
-                    style={{
-                      flex: 1, padding: "10px 14px", borderRadius: 10,
-                      border: "1.5px solid var(--border)", background: "var(--input-bg)",
-                      color: "var(--text)", fontSize: 14, fontWeight: 600, outline: "none",
-                      fontFamily: "'Inter', sans-serif",
-                    }}
-                  />
-                  <button
-                    onClick={() => {
-                      const amount = parseInt(budgetInput, 10) || 0;
-                      onUpdateBudget(currentMonthKey, null, amount);
-                      setBudgetSaved(true);
-                    }}
-                    style={{
-                      padding: "10px 18px", borderRadius: 10, border: "none",
-                      background: "var(--accent)", color: "#fff",
-                      fontSize: 13, fontWeight: 700, cursor: "pointer",
-                      fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap",
-                    }}
-                  >
-                    Simpan
-                  </button>
-                </div>
-                {budgetSaved && (
-                  <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--success)", fontWeight: 600 }}>
-                    ✓ Budget disimpan
-                  </p>
-                )}
-                {currentTotalBudget > 0 && !budgetSaved && (
-                  <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--text-muted)" }}>
-                    Budget total: <strong style={{ color: "var(--text)" }}>{formatUang(currentTotalBudget)}</strong>
-                  </p>
-                )}
-
-                {/* Per-kategori budgets */}
-                <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
-                  <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 700, color: "var(--text)" }}>
-                    Budget Per Kategori
-                  </p>
-                  {kategoriList.filter(k => k !== 'Lainnya').map(kat => {
-                    const katBudget = typeof budgetData === 'object' ? (budgetData[kat]?.amount || 0) : 0;
-                    const katSpent = spentMap[kat] || 0;
-                    const [katInput, setKatInput] = useState(String(katBudget || ''));
-                    return (
-                      <div key={kat} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <span style={{ minWidth: 80, fontSize: 11, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kat}</span>
-                        <input type="text" inputMode="numeric" placeholder="0"
-                          value={katInput}
-                          onChange={(e) => setKatInput(e.target.value.replace(/[^0-9]/g, ""))}
-                          style={{
-                            flex: 1, padding: "6px 10px", borderRadius: 8,
-                            border: "1px solid var(--border)", background: "var(--input-bg)",
-                            color: "var(--text)", fontSize: 12, fontWeight: 600, outline: "none",
-                            fontFamily: "'Inter', sans-serif",
-                          }} />
-                        <button onClick={() => {
-                          const amount = parseInt(katInput, 10) || 0;
-                          onUpdateBudget(currentMonthKey, kat, amount);
-                          setBudgetSaved(true);
-                        }} style={{
-                          padding: "6px 12px", borderRadius: 8, border: "none",
-                          background: "var(--accent)", color: "#fff", fontSize: 11,
-                          fontWeight: 700, cursor: "pointer",
-                        }}>Simpan</button>
-                        {katBudget > 0 && (
-                          <span style={{ fontSize: 10, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                            {formatUang(katSpent)} / {formatUang(katBudget)}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </SettingsCard>
-          </>
-        );
-      })()}
+      <BudgetManager
+        budgetMap={budgetMap}
+        onUpdateBudget={onUpdateBudget}
+        kategoriList={kategoriList}
+        data={data}
+      />
 
       {/* ═══════════════════════════════════════ */}
       {/*  TRANSAKSI BERULANG                      */}
