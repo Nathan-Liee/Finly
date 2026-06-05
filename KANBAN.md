@@ -4,16 +4,7 @@
 
 ## 🔴 Backlog (Siap Kerja)
 
-- [ ] Desktop mode — responsive sidebar untuk layar lebar
-- [ ] Dark mode toggle
-- [ ] Grafik dashboard — chart pemasukan vs pengeluaran per bulan
-- [ ] Keyboard shortcuts (N=add, ESC=close)
-- [ ] Bundle splitting — lazy load per screen
-- [ ] Toast queue — notification gak tumpuk
-- [ ] Export PDF/Excel
-- [ ] Multi-budget per kategori
-- [ ] Recurring transactions
-- [ ] Data backup & restore
+- (kosong)
 
 ## 🟡 In Progress
 
@@ -21,6 +12,18 @@
 
 ## 🟢 Done
 
+- [x] Desktop mode — responsive sidebar untuk layar lebar
+- [x] Dark mode toggle
+- [x] Grafik dashboard — chart pemasukan vs pengeluaran per bulan
+- [x] Keyboard shortcuts (N=add, ESC=close)
+- [x] Bundle splitting — lazy load per screen
+- [x] Toast queue — notification gak tumpuk
+- [x] Export PDF/Excel
+- [x] Multi-budget per kategori
+- [x] Recurring transactions
+- [x] Data backup & restore — restore modal with merge/overwrite
+- [x] PWA — improved service worker, install prompt, icon sizes
+- [x] Code audit — package.json version fix, unused imports cleanup
 - [x] Filter pills (tipe/metode) di Laporan
 - [x] Search/filter totals respect filter aktif
 - [x] Kategori management (add/edit/delete)

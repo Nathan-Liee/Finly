@@ -23,7 +23,7 @@
 
 | | |
 |---|---|
-| **Version** | v1.13.1 |
+| **Version** | v1.14.0 |
 | **Live** | [finly-mauve.vercel.app](https://finly-mauve.vercel.app) |
 | **Build** | ![Build](https://img.shields.io/badge/build-passing-brightgreen) |
 | **License** | ![License](https://img.shields.io/badge/license-MIT-blue) |
@@ -82,6 +82,14 @@ npm run dev
 ## 📋 Changelog
 
 > Changelog otomatis diperbarui setiap hari oleh AI agent.
+### 2026-06-05 (v1.14.0)
+- 🖥️ Desktop mode — responsive sidebar navigasi (≥768px)
+- 📄 Export PDF (jsPDF) + Excel (xlsx) langsung dari Laporan
+- 🎯 Multi-budget per kategori — set budget tiap kategori di Pengaturan
+- 🔁 Recurring transactions — aturan harian/mingguan/bulanan auto-apply
+- 💾 Data backup & restore — modal preview dengan merge/overwrite
+- 📱 PWA — improved service worker (3-tier caching), install prompt, icon 192/512
+- 🔧 Code audit — version sync, unused imports cleanup
 
 ### 2026-06-04
 - 🖥️ Desktop responsive layout + sidebar navigasi
@@ -110,5 +118,5 @@ npm run dev
 ---
 
 <p align="center">
-  Dibuat dengan ❤️ | Finly v1.13.1
+  Dibuat dengan ❤️ | Finly v1.14.0
 </p>

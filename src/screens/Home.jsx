@@ -26,14 +26,15 @@ function calcAggregate(data) {
 /* ═══════════════════════════════════════════
  *  HOME SCREEN
  * ═══════════════════════════════════════════ */
-const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user, onEditTx, onDeleteTx, budgetMap }) {
+const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user, onEditTx, onDeleteTx, budgetMap, kategoriList }) {
   const saldo = todayCalc.saldoCash ?? 0;
   const todayTransaksi = data[today]?.transaksi ?? [];
   const agg = useMemo(() => calcAggregate(data), [data]);
 
   /* ─── Budget bulan ini ─── */
   const currentMonth = today.substring(0, 7);
-  const budgetAmount = budgetMap?.[currentMonth] ?? 0;
+  const budgetData = budgetMap?.[currentMonth] ?? {};
+  const budgetAmount = typeof budgetData === 'object' ? (budgetData._total || 0) : Number(budgetData || 0);
   const spentThisMonth = useMemo(() => {
     if (!data) return 0;
     let total = 0;
@@ -222,6 +223,35 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                 : `${Math.round(budgetPct)}% terpakai • sisa ${formatUang(Math.max(budgetAmount - spentThisMonth, 0))}`
               }
             </p>
+            {/* Per-kategori budget progress */}
+            {typeof budgetData === 'object' && Object.keys(budgetData).filter(k => k !== '_total').length > 0 && (
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+                <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Per Kategori
+                </p>
+                {Object.keys(budgetData).filter(k => k !== '_total').map(kat => {
+                  const katBudget = budgetData[kat];
+                  const katAmount = katBudget.amount || 0;
+                  const katSpent = Object.keys(data).filter(tgl => tgl.startsWith(currentMonth))
+                    .reduce((s, tgl) => s + (data[tgl]?.transaksi ?? []).filter(t => t.type === 'keluar' && t.kategori === kat).reduce((s2, t) => s2 + (t.jumlah || 0), 0), 0);
+                  const katPct = katAmount > 0 ? Math.min((katSpent / katAmount) * 100, 100) : 0;
+                  const katOver = katAmount > 0 && katSpent > katAmount;
+                  return (
+                    <div key={kat} style={{ marginBottom: 4 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text)" }}>{kat}</span>
+                        <span style={{ fontSize: 9, fontWeight: 600, color: katOver ? "var(--danger)" : "var(--text-muted)" }}>
+                          {formatUang(katSpent)} / {formatUang(katAmount)}
+                        </span>
+                      </div>
+                      <div style={{ height: 4, borderRadius: 2, background: "var(--border)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${katPct}%`, borderRadius: 2, background: katOver ? "var(--danger)" : "var(--accent)", transition: "width 0.3s" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -430,6 +460,7 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {t._recurringId ? <span style={{ marginRight: 4 }}>🕐</span> : null}
                     {t.type === "masuk" ? "Pemasukan" : (t.kategori || "Pengeluaran")}
                   </p>
                   <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>

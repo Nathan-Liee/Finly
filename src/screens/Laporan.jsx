@@ -535,7 +535,62 @@ export default function LaporanScreen({
             fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
             fontFamily: "'Inter', sans-serif",
           }}>
-            <Icon name="download" size={14} color="var(--success)" /> Export
+            <Icon name="download" size={14} color="var(--success)" /> CSV
+          </button>
+          <button onClick={async () => {
+            try {
+              const { default: jspdf } = await import("jspdf");
+              await import("jspdf-autotable");
+              const esc = (v) => String(v ?? "");
+              const allDates = filteredDates;
+              let totalMasuk = 0, totalKeluar = 0;
+              const rows = [];
+              allDates.forEach(tgl => {
+                const c = calc(tgl);
+                c.transaksi?.forEach(t => {
+                  const r = { tanggal: tgl, tipe: t.type === "masuk" ? "Pemasukan" : "Pengeluaran", metode: (t.metode || "cash").toUpperCase(), kategori: t.kategori || "-", catatan: t.catatan || "-", jumlah: t.jumlah ?? 0 };
+                  if (t.type === "masuk") totalMasuk += t.jumlah ?? 0; else totalKeluar += t.jumlah ?? 0;
+                  rows.push(r);
+                });
+              });
+              const doc = new jspdf({ orientation: "landscape", unit: "mm", format: "a4" });
+              doc.setFontSize(14); doc.text("Laporan Keuangan", 14, 15);
+              doc.setFontSize(8);
+              doc.text(`Export: ${new Date().toLocaleString("id-ID")} | ${rows.length} transaksi | Masuk: Rp ${totalMasuk.toLocaleString("id-ID")} | Keluar: Rp ${totalKeluar.toLocaleString("id-ID")}`, 14, 22);
+              doc.autoTable({ head: [["Tanggal","Tipe","Metode","Kategori","Catatan","Jumlah"]], body: rows.map(r => [r.tanggal, r.tipe, r.metode, r.kategori, r.catatan, r.jumlah.toLocaleString("id-ID")]), startY: 26, styles: { fontSize: 7 }, headStyles: { fillColor: [107, 126, 255] } });
+              doc.save(`finly-laporan-${today}.pdf`);
+            } catch(e) { alert("Gagal export PDF: " + e.message); }
+          }} style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 10, padding: "8px 14px", cursor: "pointer", color: "var(--text-secondary)",
+            fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            <Icon name="download" size={14} color="var(--text-muted)" /> PDF
+          </button>
+          <button onClick={async () => {
+            try {
+              const XLSX = await import("xlsx");
+              const allDates = filteredDates;
+              const rows = [];
+              allDates.forEach(tgl => {
+                const c = calc(tgl);
+                c.transaksi?.forEach(t => {
+                  rows.push([tgl, t.type === "masuk" ? "Pemasukan" : "Pengeluaran", (t.metode || "cash").toUpperCase(), t.kategori || "-", t.catatan || "-", t.jumlah ?? 0]);
+                });
+              });
+              const ws = XLSX.utils.aoa_to_sheet([["Tanggal","Tipe","Metode","Kategori","Catatan","Jumlah"], ...rows]);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "Laporan");
+              XLSX.writeFile(wb, `finly-laporan-${today}.xlsx`);
+            } catch(e) { alert("Gagal export Excel: " + e.message); }
+          }} style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 10, padding: "8px 14px", cursor: "pointer", color: "var(--text-secondary)",
+            fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            <Icon name="download" size={14} color="var(--text-muted)" /> Excel
           </button>
         </div>
       </div>

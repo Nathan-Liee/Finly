@@ -1,7 +1,7 @@
 {
   "name": "kas-app",
   "private": true,
-  "version": "1.11.0",
+  "version": "1.14.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,8 +15,11 @@
     "@capacitor/core": "^8.3.0",
     "@capacitor/splash-screen": "^8.0.1",
     "@supabase/supabase-js": "^2.101.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

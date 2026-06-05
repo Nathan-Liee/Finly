@@ -3,7 +3,6 @@ import { version } from '../../package.json';
 import Icon from "../components/Icon";
 import { formatUang } from "../utils/format";
 import { updateProfile, updatePassword, getDisplayName } from "../utils/storage";
-import { supabase } from "../utils/supabase";
 import { insertFeedback, getFeedbackList, updateFeedbackStatus } from "../utils/supabase-feedback";
 import { toggleTheme } from "../theme";
 
@@ -123,6 +122,8 @@ export default function PengaturanScreen({
   profile, setProfile, user, onResetUangAwal, onLogout,
   kategoriList, onUpdateKategori,
   budgetMap, onUpdateBudget,
+  recurringRules, onAddRecurringRule, onRemoveRecurringRule,
+  onOpenImport, installPrompt,
 }) {
   /* ─── Profile editing ─── */
   const [editMode, setEditMode] = useState(null); // "username" | "password" | null
@@ -257,27 +258,7 @@ export default function PengaturanScreen({
   };
 
   const handleImportData = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const imported = JSON.parse(text);
-        if (!imported.data || typeof imported.data !== "object") {
-          alert("Format file tidak valid. Harus berisi { data: {...} }");
-          return;
-        }
-        if (!window.confirm(`Import ${Object.keys(imported.data).length} hari data? Data lama akan ditimpa.`)) return;
-        localStorage.setItem("kasapp-data", JSON.stringify(imported.data));
-        window.location.reload();
-      } catch (err) {
-        alert("Gagal import: " + (err.message || "File tidak valid"));
-      }
-    };
-    input.click();
+    onOpenImport?.();
   };
 
   const handleFilterChange = (status) => {
@@ -1042,19 +1023,34 @@ export default function PengaturanScreen({
       {(() => {
         const now = new Date();
         const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-        const [budgetInput, setBudgetInput] = useState(String(budgetMap[currentMonthKey] ?? ""));
+        const budgetData = budgetMap[currentMonthKey] ?? {};
+        const [budgetInput, setBudgetInput] = useState(String(typeof budgetData === 'object' ? (budgetData._total || '') : ''));
         const [budgetSaved, setBudgetSaved] = useState(false);
-        const currentBudget = budgetMap[currentMonthKey] ?? 0;
+        const [katBudgetInputs, setKatBudgetInputs] = useState({});
+        const currentTotalBudget = typeof budgetData === 'object' ? (budgetData._total || 0) : 0;
+        // Compute current spending per kategori
+        const spentMap = {};
+        Object.keys(data).forEach(tgl => {
+          if (tgl.startsWith(currentMonthKey)) {
+            (data[tgl]?.transaksi ?? []).forEach(t => {
+              if (t.type === 'keluar') {
+                const k = t.kategori || 'Lainnya';
+                spentMap[k] = (spentMap[k] || 0) + (t.jumlah || 0);
+              }
+            });
+          }
+        });
         return (
           <>
             <SectionHeader title="Budget Bulanan" />
             <SettingsCard>
               <div style={{ padding: "12px 16px" }}>
                 <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--text-muted)" }}>
-                  Set budget pengeluaran untuk bulan ini. Progress akan muncul di Home.
+                  Set budget pengeluaran untuk bulan ini. Bisa total atau per kategori.
                 </p>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" }}>Rp</span>
+                {/* Total budget */}
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" }}>Total Rp</span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -1071,7 +1067,7 @@ export default function PengaturanScreen({
                   <button
                     onClick={() => {
                       const amount = parseInt(budgetInput, 10) || 0;
-                      onUpdateBudget(currentMonthKey, amount);
+                      onUpdateBudget(currentMonthKey, null, amount);
                       setBudgetSaved(true);
                     }}
                     style={{
@@ -1085,20 +1081,116 @@ export default function PengaturanScreen({
                   </button>
                 </div>
                 {budgetSaved && (
-                  <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--success)", fontWeight: 600 }}>
+                  <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--success)", fontWeight: 600 }}>
                     ✓ Budget disimpan
                   </p>
                 )}
-                {currentBudget > 0 && !budgetSaved && (
-                  <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--text-muted)" }}>
-                    Budget saat ini: <strong style={{ color: "var(--text)" }}>{formatUang(currentBudget)}</strong> / bulan
+                {currentTotalBudget > 0 && !budgetSaved && (
+                  <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--text-muted)" }}>
+                    Budget total: <strong style={{ color: "var(--text)" }}>{formatUang(currentTotalBudget)}</strong>
                   </p>
                 )}
+
+                {/* Per-kategori budgets */}
+                <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
+                  <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 700, color: "var(--text)" }}>
+                    Budget Per Kategori
+                  </p>
+                  {kategoriList.filter(k => k !== 'Lainnya').map(kat => {
+                    const katBudget = typeof budgetData === 'object' ? (budgetData[kat]?.amount || 0) : 0;
+                    const katSpent = spentMap[kat] || 0;
+                    const [katInput, setKatInput] = useState(String(katBudget || ''));
+                    return (
+                      <div key={kat} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <span style={{ minWidth: 80, fontSize: 11, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kat}</span>
+                        <input type="text" inputMode="numeric" placeholder="0"
+                          value={katInput}
+                          onChange={(e) => setKatInput(e.target.value.replace(/[^0-9]/g, ""))}
+                          style={{
+                            flex: 1, padding: "6px 10px", borderRadius: 8,
+                            border: "1px solid var(--border)", background: "var(--input-bg)",
+                            color: "var(--text)", fontSize: 12, fontWeight: 600, outline: "none",
+                            fontFamily: "'Inter', sans-serif",
+                          }} />
+                        <button onClick={() => {
+                          const amount = parseInt(katInput, 10) || 0;
+                          onUpdateBudget(currentMonthKey, kat, amount);
+                          setBudgetSaved(true);
+                        }} style={{
+                          padding: "6px 12px", borderRadius: 8, border: "none",
+                          background: "var(--accent)", color: "#fff", fontSize: 11,
+                          fontWeight: 700, cursor: "pointer",
+                        }}>Simpan</button>
+                        {katBudget > 0 && (
+                          <span style={{ fontSize: 10, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                            {formatUang(katSpent)} / {formatUang(katBudget)}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </SettingsCard>
           </>
         );
       })()}
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  TRANSAKSI BERULANG                      */}
+      {/* ═══════════════════════════════════════ */}
+      <SectionHeader title="Transaksi Berulang" />
+      <SettingsCard>
+        {recurringRules.length === 0 ? (
+          <div style={{ padding: "16px", textAlign: "center" }}>
+            <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
+              Belum ada aturan transaksi berulang.
+            </p>
+            <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)" }}>
+              Buat aturan untuk mengotomatisasi transaksi harian, mingguan, atau bulanan.
+            </p>
+          </div>
+        ) : (
+          <div>
+            {recurringRules.map((rule, i) => (
+              <div key={rule.id}>
+                {i > 0 && <Divider />}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8,
+                    background: rule.type === "masuk" ? "var(--success-subtle)" : "var(--danger-subtle)",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  }}>
+                    <span>🕐</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: "0 0 1px", fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+                      {rule.type === "masuk" ? "Pemasukan" : (rule.kategori || "Pengeluaran")} — {formatUang(rule.jumlah)}
+                    </p>
+                    <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>
+                      {rule.frequency === "daily" ? "Harian" : rule.frequency === "weekly" ? `Mingguan (${["Min","Sen","Sel","Rab","Kam","Jum","Sab"][rule.dayOfWeek]})` : `Bulanan (tgl ${rule.dayOfMonth})`}
+                      {rule.catatan && rule.catatan !== "-" ? ` • ${rule.catatan}` : ""}
+                    </p>
+                  </div>
+                  <button onClick={() => { onRemoveRecurringRule(rule.id); }} style={{
+                    width: 28, height: 28, borderRadius: 8, border: "none",
+                    background: "var(--danger-subtle)", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12,
+                  }}>🗑️</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ padding: "10px 16px" }}>
+          <button onClick={() => setModal("tambahRecurring")} style={{
+            width: "100%", padding: "10px", borderRadius: 10, border: "1px dashed var(--border)",
+            background: "var(--surface)", color: "var(--accent)", fontSize: 13,
+            fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+          }}>
+            + Tambah Aturan Berulang
+          </button>
+        </div>
+      </SettingsCard>
 
       {/* ═══════════════════════════════════════ */}
       {/*  TENTANG                                 */}
@@ -1134,6 +1226,26 @@ export default function PengaturanScreen({
           title="Tech Stack" subtitle="React, Vite, Supabase"
         />
       </SettingsCard>
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  APLIKASI                                */}
+      {/* ═══════════════════════════════════════ */}
+      {installPrompt && (
+        <>
+          <SectionHeader title="Aplikasi" />
+          <SettingsCard>
+            <SettingRow
+              icon="download" iconColor="var(--success)"
+              title="Pasang Aplikasi" subtitle="Install Finly ke layar beranda"
+              action={async () => {
+                installPrompt.prompt();
+                const { outcome } = await installPrompt.userChoice;
+                if (outcome === 'accepted') window.location.reload();
+              }}
+            />
+          </SettingsCard>
+        </>
+      )}
 
       {/* ═══════════════════════════════════════ */}
       {/*  LOGOUT / DELETE                         */}

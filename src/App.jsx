@@ -15,7 +15,9 @@ const PengaturanScreen = lazy(() => import("./screens/Pengaturan"));
 import { loadData, saveHarian, saveTransaksi, getCurrentDate, loadProfile } from "./utils/storage";
 import { calcHarian } from "./utils/calc";
 import { formatAngka } from "./utils/format";
+import { toggleTheme } from "./theme";
 import { saveTransaksiLocal, saveUangAwalLocal, addToSyncQueue } from "./db/index";
+import { version } from "../package.json";
 
 /* ─── Helpers ─── */
 const cleanNumber = (str) => String(str ?? "").replace(/\./g, "");
@@ -42,6 +44,13 @@ export default function App() {
   const [toasts, setToasts]    = useState([]);
   const [modal, setModal]      = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [isDark, setIsDark] = useState(() => {
+    try { return localStorage.getItem("kasapp-theme") === "dark"; } catch { return false; }
+  });
+
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [importPreview, setImportPreview] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
 
   // Form states
   const [formJumlah,    setFormJumlah]    = useState("");
@@ -74,21 +83,102 @@ export default function App() {
   const [budgetMap, setBudgetMap] = useState(() => {
     try {
       const stored = localStorage.getItem("finly-budget");
-      return stored ? JSON.parse(stored) : {};
+      const parsed = stored ? JSON.parse(stored) : {};
+      // Backward compat: convert old number format to new object format
+      Object.keys(parsed).forEach(k => {
+        if (typeof parsed[k] === 'number') {
+          parsed[k] = {};
+        }
+      });
+      return parsed;
     } catch {
       return {};
     }
   });
 
-  const updateBudget = useCallback((monthKey, amount) => {
+  const updateBudget = useCallback((monthKey, kategori, amount) => {
     setBudgetMap(prev => {
       const next = { ...prev };
-      if (amount <= 0) delete next[monthKey];
-      else next[monthKey] = amount;
+      const current = typeof prev[monthKey] === 'number' ? {} : (prev[monthKey] || {});
+      if (!kategori) {
+        // Set total budget (old behavior) — store under "_total" key
+        if (amount > 0) current._total = amount;
+        else { delete current._total; if (Object.keys(current).length === 0) delete next[monthKey]; }
+      } else {
+        // Per-kategori budget
+        if (amount > 0) current[kategori] = { amount, spent: 0 };
+        else { delete current[kategori]; if (Object.keys(current).length === 0) delete next[monthKey]; }
+      }
+      if (Object.keys(current).length > 0) next[monthKey] = current;
       try { localStorage.setItem("finly-budget", JSON.stringify(next)); } catch {}
       return next;
     });
   }, []);
+
+  /* ─── Recurring Transactions ─── */
+  const [recurringRules, setRecurringRules] = useState(() => {
+    try {
+      const stored = localStorage.getItem("finly-recurring");
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
+  const addRecurringRule = useCallback((rule) => {
+    setRecurringRules(prev => {
+      const next = [...prev, { ...rule, id: "rec_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6) }];
+      try { localStorage.setItem("finly-recurring", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const removeRecurringRule = useCallback((id) => {
+    setRecurringRules(prev => {
+      const next = prev.filter(r => r.id !== id);
+      try { localStorage.setItem("finly-recurring", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  /* ─── Auto-apply recurring transactions ─── */
+  useEffect(() => {
+    if (!data || Object.keys(data).length === 0) return;
+    const todayStr = getCurrentDate();
+    if (!data[todayStr]) return; // need setup first
+    const now = new Date();
+    const todayDOW = now.getDay(); // 0=Sun
+    const todayDOM = now.getDate();
+    let added = 0;
+    recurringRules.forEach(rule => {
+      let shouldAdd = false;
+      if (rule.frequency === 'daily') shouldAdd = true;
+      else if (rule.frequency === 'weekly' && rule.dayOfWeek === todayDOW) shouldAdd = true;
+      else if (rule.frequency === 'monthly' && rule.dayOfMonth === todayDOM) shouldAdd = true;
+      if (!shouldAdd) return;
+      // Check if already added today
+      const existingTx = data[todayStr]?.transaksi ?? [];
+      const alreadyAdded = existingTx.some(t => t._recurringId === rule.id);
+      if (alreadyAdded) return;
+      added++;
+      // Add transaction
+      const newTx = {
+        type: rule.type,
+        jumlah: rule.jumlah,
+        metode: rule.metode || 'cash',
+        kategori: rule.kategori || 'Lainnya',
+        catatan: rule.catatan || (rule.frequency === 'daily' ? 'Harian' : rule.frequency === 'weekly' ? 'Mingguan' : 'Bulanan'),
+        _recurringId: rule.id,
+      };
+      setData(prev => {
+        const d = { ...prev };
+        if (!d[todayStr]) d[todayStr] = { uang_awal: 0, transaksi: [] };
+        d[todayStr].transaksi = [...(d[todayStr]?.transaksi ?? []), newTx];
+        return d;
+      });
+    });
+    if (added > 0) {
+      showToast(`${added} transaksi berulang ditambahkan`, "info");
+    }
+  }, [data, recurringRules]);
 
   /* ─── Auth init ─── */
   useEffect(() => {
@@ -211,6 +301,13 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  /* ─── PWA install prompt ─── */
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
   /* ─── UI helpers ─── */
   const showToast = (msg, type = "success") => {
     const id = Date.now();
@@ -225,6 +322,7 @@ export default function App() {
     setEditIdx(null); setFormEditJumlah(""); setFormEditMetode("cash");
     setFormEditKategori(""); setFormEditCatatan("");
     setResetStart(""); setResetEnd(""); setResetUangAwal(false);
+    setImportPreview(null);
   };
 
   const handleFormJumlahChange    = (val) => setFormJumlah(formatAngka(val ?? ""));
@@ -543,6 +641,150 @@ export default function App() {
   );
 
   /* ─── Main app ─── */
+
+  /* ─── Export helpers ─── */
+  const getAllExportData = useCallback((filterDates) => {
+    const allDates = filterDates && filterDates.length > 0
+      ? filterDates : Object.keys(data).sort((a, b) => b.localeCompare(a));
+    const rows = [];
+    let totalMasuk = 0, totalKeluar = 0;
+    allDates.forEach(tgl => {
+      (data[tgl]?.transaksi ?? []).forEach(t => {
+        const row = {
+          tanggal: tgl,
+          tipe: t.type === "masuk" ? "Pemasukan" : "Pengeluaran",
+          metode: (t.metode || "cash").toUpperCase(),
+          kategori: t.kategori || "-",
+          catatan: t.catatan || "-",
+          jumlah: t.jumlah ?? 0,
+        };
+        if (t.type === "masuk") totalMasuk += t.jumlah ?? 0;
+        else totalKeluar += t.jumlah ?? 0;
+        rows.push(row);
+      });
+    });
+    return { rows, totalMasuk, totalKeluar, totalTransaksi: rows.length, saldoBersih: totalMasuk - totalKeluar };
+  }, [data]);
+
+  const exportPDF = useCallback(async () => {
+    try {
+      const { default: jspdf } = await import("jspdf");
+      await import("jspdf-autotable");
+      const { rows, totalMasuk, totalKeluar, totalTransaksi, saldoBersih } = getAllExportData();
+      const doc = new jspdf({ orientation: "landscape", unit: "mm", format: "a4" });
+      doc.setFontSize(16);
+      doc.text("Laporan Keuangan", 14, 15);
+      doc.setFontSize(9);
+      doc.text(`Export: ${new Date().toLocaleString("id-ID")}`, 14, 22);
+      doc.text(`Total: ${totalTransaksi} transaksi | Masuk: Rp ${totalMasuk.toLocaleString("id-ID")} | Keluar: Rp ${totalKeluar.toLocaleString("id-ID")} | Saldo: Rp ${saldoBersih.toLocaleString("id-ID")}`, 14, 28);
+      const headers = [["Tanggal", "Tipe", "Metode", "Kategori", "Catatan", "Jumlah (Rp)"]];
+      const body = rows.map(r => [r.tanggal, r.tipe, r.metode, r.kategori, r.catatan, r.jumlah.toLocaleString("id-ID")]);
+      doc.autoTable({ head: headers, body, startY: 32, styles: { fontSize: 7 }, headStyles: { fillColor: [107, 126, 255] }, margin: { left: 14, right: 14 } });
+      doc.save(`finly-laporan-${today}.pdf`);
+      closeModal();
+      showToast("PDF berhasil di-export!", "success");
+    } catch (e) {
+      showToast("Gagal export PDF: " + (e.message || e), "error");
+    }
+  }, [data, today, getAllExportData, closeModal, showToast]);
+
+  const exportExcel = useCallback(async () => {
+    try {
+      const XLSX = await import("xlsx");
+      const { rows, totalMasuk, totalKeluar, totalTransaksi, saldoBersih } = getAllExportData();
+      const wsData = [
+        ["Aplikasi", "Finly"],
+        ["Tanggal Export", new Date().toLocaleString("id-ID")],
+        ["Total Transaksi", totalTransaksi],
+        ["Total Pemasukan", totalMasuk],
+        ["Total Pengeluaran", totalKeluar],
+        ["Saldo Bersih", saldoBersih],
+        [],
+        ["Tanggal", "Tipe", "Metode", "Kategori", "Catatan", "Jumlah"],
+        ...rows.map(r => [r.tanggal, r.tipe, r.metode, r.kategori, r.catatan, r.jumlah]),
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan");
+      XLSX.writeFile(wb, `finly-laporan-${today}.xlsx`);
+      closeModal();
+      showToast("Excel berhasil di-export!", "success");
+    } catch (e) {
+      showToast("Gagal export Excel: " + (e.message || e), "error");
+    }
+  }, [data, today, getAllExportData, closeModal, showToast]);
+
+  /* ─── Import helpers ─── */
+  const handleOpenImport = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const imported = JSON.parse(text);
+        if (!imported.data || typeof imported.data !== "object") {
+          showToast("Format file tidak valid. Harus berisi { data: {...} }", "error");
+          return;
+        }
+        const days = Object.keys(imported.data).sort();
+        let totalTx = 0;
+        days.forEach(tgl => { totalTx += (imported.data[tgl]?.transaksi?.length ?? 0); });
+        setImportPreview({
+          data: imported.data,
+          version: imported.version || "unknown",
+          exportedAt: imported.exportedAt || "unknown",
+          days: days.length,
+          totalTx,
+          dateRange: days.length > 0 ? `${days[0]} — ${days[days.length - 1]}` : "-",
+        });
+        setModal("importPreview");
+      } catch (err) {
+        showToast("Gagal import: " + (err.message || "File tidak valid"), "error");
+      }
+    };
+    input.click();
+  };
+
+  const doImport = async (mode) => {
+    if (!importPreview) return;
+    setImportLoading(true);
+    try {
+      const importedData = importPreview.data;
+      setData(prev => {
+        let merged;
+        if (mode === "overwrite") {
+          merged = importedData;
+        } else {
+          merged = { ...prev };
+          Object.keys(importedData).forEach(tgl => {
+            if (merged[tgl]) {
+              const existingTx = merged[tgl].transaksi || [];
+              const newTx = importedData[tgl].transaksi || [];
+              merged[tgl] = {
+                uang_awal: importedData[tgl].uang_awal ?? merged[tgl].uang_awal,
+                transaksi: [...existingTx, ...newTx],
+              };
+            } else {
+              merged[tgl] = importedData[tgl];
+            }
+          });
+        }
+        try { localStorage.setItem("kasapp-data", JSON.stringify(merged)); } catch {}
+        return merged;
+      });
+      closeModal();
+      setImportPreview(null);
+      showToast(`Import berhasil! (mode: ${mode === "overwrite" ? "timpa" : "gabung"})`, "success");
+    } catch (err) {
+      showToast("Gagal menyimpan data import: " + (err.message || "Error"), "error");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -550,7 +792,7 @@ export default function App() {
         body { margin: 0; background: var(--bg); }
         input::placeholder { color: var(--text-muted); }
         ::-webkit-scrollbar { width: 0; }
-        :root { --cw: min(100vw, 480px); }
+        :root { --cw: min(100vw, 480px); --sidebar-width: 240px; }
         @media (min-width: 768px) { :root { --cw: min(100vw, 640px); } }
         @media (min-width: 1024px) { :root { --cw: min(100vw, 800px); } }
         .app-container {
@@ -573,13 +815,124 @@ export default function App() {
           right: calc((100vw - var(--cw)) / 2 + 20px);
           display: flex; flex-direction: column; gap: 10px; z-index: 99;
         }
+        /* ─── Sidebar — desktop only ─── */
+        .app-sidebar {
+          display: none;
+          position: fixed; top: 0; left: 0;
+          width: var(--sidebar-width); height: 100vh;
+          background: var(--surface);
+          border-right: 1px solid var(--border);
+          z-index: 200; flex-direction: column;
+          overflow-y: auto;
+        }
+        .app-sidebar-nav {
+          padding: 12px; display: flex; flex-direction: column; gap: 2px;
+        }
+        .app-sidebar-nav button {
+          width: 100%; display: flex; align-items: center; gap: 12px;
+          padding: 11px 14px; border: none; border-radius: 10px;
+          cursor: pointer; font-size: 14px; font-weight: 600;
+          font-family: 'Inter', sans-serif; text-align: left; transition: all 0.15s;
+        }
+        .app-sidebar-nav button:hover {
+          background: var(--accent-subtle);
+        }
+        .app-sidebar-footer {
+          margin-top: auto; padding: 12px 12px 20px;
+          border-top: 1px solid var(--border);
+        }
+        @media (min-width: 768px) {
+          .app-sidebar { display: flex; }
+          .app-nav { display: none; }
+          .app-container {
+            margin-left: var(--sidebar-width); margin-right: auto; max-width: var(--cw);
+          }
+          .app-fab {
+            bottom: 24px;
+            right: calc(100vw - var(--sidebar-width) - var(--cw) + 20px);
+          }
+          .app-offline-banner {
+            left: calc(50% + var(--sidebar-width) / 2);
+            max-width: calc(100vw - var(--sidebar-width));
+          }
+        }
       `}</style>
+
+      {/* ─── Sidebar ─── */}
+      <div className="app-sidebar">
+        <div style={{
+          padding: "20px 16px 16px",
+          display: "flex", alignItems: "center", gap: 10,
+          borderBottom: "1px solid var(--border)",
+        }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 10,
+            background: "var(--gradient)", flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#fff", fontWeight: 800, fontSize: 16,
+          }}>
+            F
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", letterSpacing: -0.5 }}>
+            Finly
+          </span>
+        </div>
+        <div className="app-sidebar-nav">
+          {TABS.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{
+                background: tab === t.key ? "var(--accent-subtle)" : "none",
+                color: tab === t.key ? "var(--accent)" : "var(--text-secondary)",
+              }}
+            >
+              <Icon name={t.icon} size={20} color={tab === t.key ? "var(--accent)" : "var(--text-secondary)"} />
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="app-sidebar-footer">
+          {installPrompt && (
+            <button onClick={async () => {
+              installPrompt.prompt();
+              const { outcome } = await installPrompt.userChoice;
+              if (outcome === 'accepted') setInstallPrompt(null);
+            }} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "11px 14px", border: "none", borderRadius: 10,
+              background: "var(--accent-subtle)", cursor: "pointer",
+              color: "var(--accent)", fontSize: 14, fontWeight: 600,
+              fontFamily: "'Inter', sans-serif", width: "100%", textAlign: "left",
+              transition: "all 0.15s", marginBottom: 4,
+            }}>
+              <Icon name="download" size={20} color="var(--accent)" />
+              <span>Pasang Aplikasi</span>
+            </button>
+          )}
+          <button onClick={() => {
+            toggleTheme();
+            setIsDark(prev => !prev);
+          }} style={{
+            display: "flex", alignItems: "center", gap: 12,
+            padding: "11px 14px", border: "none", borderRadius: 10,
+            background: "none", cursor: "pointer",
+            color: "var(--text-secondary)", fontSize: 14, fontWeight: 600,
+            fontFamily: "'Inter', sans-serif", width: "100%", textAlign: "left",
+            transition: "all 0.15s",
+          }}>
+            <Icon name={isDark ? "sun" : "moon"} size={20} color="var(--text-secondary)" />
+            <span>{isDark ? "Mode Terang" : "Mode Gelap"}</span>
+          </button>
+        </div>
+      </div>
 
       <div className="app-container">
         {toasts[0] && <Toast msg={toasts[0].msg} type={toasts[0].type} />}
         {!isOnline && (
           <div className="app-offline-banner">
-            Tidak ada koneksi internet
+            <span>Tidak ada koneksi internet</span>
+            {dates.length > 0 && (
+              <span style={{ marginLeft: 8, opacity: 0.8 }}>— {dates.length} hari data tersedia offline</span>
+            )}
           </div>
         )}
 
@@ -596,6 +949,7 @@ export default function App() {
               onEditTx={handleEditTx}
               onDeleteTx={handleDeleteTx}
               budgetMap={budgetMap}
+              kategoriList={kategoriList}
             />
           </div>
         )}
@@ -621,6 +975,8 @@ export default function App() {
               onLogout={async () => { try { await supabase.auth.signOut(); } catch{} setUser(null); setData({}); setProfile(null); setTab("home"); }}
               kategoriList={kategoriList} onUpdateKategori={updateKategoriList}
               budgetMap={budgetMap} onUpdateBudget={updateBudget}
+              recurringRules={recurringRules} onAddRecurringRule={addRecurringRule} onRemoveRecurringRule={removeRecurringRule}
+              onOpenImport={handleOpenImport} installPrompt={installPrompt}
             />
           </div>
         )}
@@ -918,6 +1274,153 @@ export default function App() {
           </div>
         </Modal>
 
+        {/* ─── Recurring Transaction Form ─── */}
+        <Modal show={modal === "tambahRecurring"} onClose={closeModal} title="Transaksi Berulang">
+          {(() => {
+            const [recFrequency, setRecFrequency] = useState("monthly");
+            const [recDayOfWeek, setRecDayOfWeek] = useState(1);
+            const [recDayOfMonth, setRecDayOfMonth] = useState(1);
+            const [recType, setRecType] = useState("keluar");
+            const [recJumlah, setRecJumlah] = useState("");
+            const [recMetode, setRecMetode] = useState("cash");
+            const [recKategori, setRecKategori] = useState("");
+            const [recCatatan, setRecCatatan] = useState("");
+            const [recSaved, setRecSaved] = useState(false);
+            const handleRecSave = () => {
+              const n = parseInt(recJumlah.replace(/\./g, ""));
+              if (!n || n <= 0) return showToast("Jumlah harus lebih dari 0!", "error");
+              if (recType === "keluar" && !recKategori) return showToast("Pilih kategori!", "error");
+              const rule = {
+                frequency: recFrequency,
+                type: recType,
+                jumlah: n,
+                metode: recMetode,
+                kategori: recType === "keluar" ? recKategori : "",
+                catatan: recCatatan || "-",
+              };
+              if (recFrequency === "weekly") rule.dayOfWeek = recDayOfWeek;
+              if (recFrequency === "monthly") rule.dayOfMonth = recDayOfMonth;
+              addRecurringRule(rule);
+              setRecSaved(true);
+              setTimeout(() => { closeModal(); setRecSaved(false); }, 1000);
+              showToast("Aturan berulang ditambahkan!", "success");
+            };
+            return (
+              <div>
+                {/* Tipe */}
+                <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Tipe</label>
+                <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                  {["masuk", "keluar"].map(m => (
+                    <button key={m} onClick={() => setRecType(m)} style={{
+                      flex: 1, padding: "10px", borderRadius: 10,
+                      border: `2px solid ${recType === m ? "var(--accent)" : "var(--border)"}`,
+                      background: recType === m ? "var(--accent-subtle)" : "var(--surface)",
+                      color: recType === m ? "var(--accent)" : "var(--text-secondary)",
+                      fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+                    }}>
+                      {m === "masuk" ? "Pemasukan" : "Pengeluaran"}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Jumlah */}
+                <Field label="Jumlah" value={recJumlah} onChange={(v) => setRecJumlah(formatAngka(v ?? ""))} type="number" placeholder="0" prefix="Rp" />
+
+                {/* Metode */}
+                <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Metode</label>
+                <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                  {["cash", "qris"].map(m => (
+                    <button key={m} onClick={() => setRecMetode(m)} style={{
+                      flex: 1, padding: "10px", borderRadius: 10,
+                      border: `2px solid ${recMetode === m ? "var(--accent)" : "var(--border)"}`,
+                      background: recMetode === m ? "var(--accent-subtle)" : "var(--surface)",
+                      color: recMetode === m ? "var(--accent)" : "var(--text-secondary)",
+                      fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+                    }}>
+                      {m.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Kategori (only for keluar) */}
+                {recType === "keluar" && (
+                  <>
+                    <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Kategori</label>
+                    <select value={recKategori} onChange={(e) => setRecKategori(e.target.value)}
+                      style={{
+                        width: "100%", padding: "10px 14px", borderRadius: 10,
+                        border: "1px solid var(--border)", background: "var(--input-bg)",
+                        color: recKategori ? "var(--text)" : "var(--text-muted)",
+                        fontSize: 13, fontFamily: "'Inter', sans-serif", outline: "none", marginBottom: 16,
+                      }}>
+                      <option value="">Pilih kategori</option>
+                      {kategoriList.map(k => <option key={k} value={k}>{k}</option>)}
+                    </select>
+                  </>
+                )}
+
+                {/* Frekuensi */}
+                <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Frekuensi</label>
+                <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                  {[
+                    { key: "daily", label: "Harian" },
+                    { key: "weekly", label: "Mingguan" },
+                    { key: "monthly", label: "Bulanan" },
+                  ].map(f => (
+                    <button key={f.key} onClick={() => setRecFrequency(f.key)} style={{
+                      flex: 1, padding: "10px", borderRadius: 10,
+                      border: `2px solid ${recFrequency === f.key ? "var(--accent)" : "var(--border)"}`,
+                      background: recFrequency === f.key ? "var(--accent-subtle)" : "var(--surface)",
+                      color: recFrequency === f.key ? "var(--accent)" : "var(--text-secondary)",
+                      fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+                    }}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Day pickers */}
+                {recFrequency === "weekly" && (
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Hari</label>
+                    <select value={recDayOfWeek} onChange={(e) => setRecDayOfWeek(Number(e.target.value))}
+                      style={{
+                        width: "100%", padding: "10px 14px", borderRadius: 10,
+                        border: "1px solid var(--border)", background: "var(--input-bg)",
+                        color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif", outline: "none",
+                      }}>
+                      {["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"].map((d, i) => (
+                        <option key={i} value={i}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {recFrequency === "monthly" && (
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>Tanggal (1-31)</label>
+                    <input type="number" min={1} max={31} value={recDayOfMonth} onChange={(e) => setRecDayOfMonth(Math.min(31, Math.max(1, parseInt(e.target.value) || 1)))}
+                      style={{
+                        width: "100%", padding: "10px 14px", borderRadius: 10,
+                        border: "1px solid var(--border)", background: "var(--input-bg)",
+                        color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif", outline: "none",
+                      }} />
+                  </div>
+                )}
+
+                {/* Catatan */}
+                <Field label="Catatan (opsional)" value={recCatatan} onChange={setRecCatatan} placeholder="Auto-generated if empty" />
+
+                {/* Save */}
+                <div style={{ marginTop: 16 }}>
+                  <Btn onClick={handleRecSave} icon="check" fullWidth>
+                    {recSaved ? "✓ Disimpan!" : "Simpan Aturan Berulang"}
+                  </Btn>
+                </div>
+              </div>
+            );
+          })()}
+        </Modal>
+
         {/* Export data */}
         <Modal show={modal === "export"} onClose={closeModal} title="Export Data">
           <div>
@@ -928,74 +1431,112 @@ export default function App() {
               <Icon name="download" size={24} color="var(--success)" />
             </div>
             <p style={{ color: "var(--text-secondary)", fontSize: 13, margin: "0 0 16px", textAlign: "center", lineHeight: 1.5 }}>
-              Download semua data transaksi dalam format CSV. File bisa dibuka di Excel, Google Sheets, atau aplikasi spreadsheet lainnya.
+              Download data transaksi dalam format pilihan Anda.
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <Btn
-                onClick={() => {
-                  // Export JSON for backup/restore
-                  const exportData = { data, exportedAt: new Date().toISOString(), version: "1.8.0" };
-                  const json = JSON.stringify(exportData, null, 2);
-                  const blob = new Blob([json], { type: "application/json" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a"); a.href = url; a.download = `kasapp-backup-${today}.json`; a.click();
-                  URL.revokeObjectURL(url);
-                  closeModal();
-                  showToast("Backup JSON berhasil di-export!", "success");
-                }}
-                variant="ghost"
-                icon="download"
-              >
-                Backup JSON
-              </Btn>
-              <Btn
-                onClick={() => {
-                  // Trigger export from Laporan
-                  const btn = document.createElement("button");
-                  btn.style.display = "none";
-                  btn.onclick = () => {
-                    const esc = (v) => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = '\t' + s; return /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-                    let totalMasuk = 0, totalKeluar = 0, totalTransaksi = 0;
-                    const allDates = Object.keys(data).sort((a, b) => b.localeCompare(a));
-                    allDates.forEach(tgl => {
-                      const tx = data[tgl]?.transaksi ?? [];
-                      tx.forEach(t => { if (t.type === "masuk") totalMasuk += t.jumlah ?? 0; else totalKeluar += t.jumlah ?? 0; });
-                      totalTransaksi += tx.length;
-                    });
-                    const lines = [];
-                    lines.push([esc("Aplikasi"), esc("Kasapp")].join(","));
-                    lines.push([esc("Tanggal Export"), esc(new Date().toLocaleString("id-ID"))].join(","));
-                    lines.push([esc("Total Transaksi"), totalTransaksi].join(","));
-                    lines.push([esc("Total Pemasukan"), totalMasuk].join(","));
-                    lines.push([esc("Total Pengeluaran"), totalKeluar].join(","));
-                    lines.push([esc("Saldo Bersih"), totalMasuk - totalKeluar].join(","));
-                    lines.push("");
-                    lines.push([esc("Tanggal"), esc("Tipe"), esc("Metode"), esc("Kategori"), esc("Catatan"), esc("Jumlah")].join(","));
-                    allDates.forEach(tgl => {
-                      data[tgl]?.transaksi?.forEach(t => {
-                        lines.push([esc(tgl), esc(t.type === "masuk" ? "Pemasukan" : "Pengeluaran"), esc(t.metode?.toUpperCase() || "-"), esc(t.kategori || "-"), esc(t.catatan || "-"), t.jumlah].join(","));
-                      });
-                    });
-                    const csv = "\uFEFF" + lines.join("\n");
-                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a"); a.href = url; a.download = `kasapp-laporan-${today}.csv`; a.click();
-                    URL.revokeObjectURL(url);
-                  };
-                  document.body.appendChild(btn); btn.click(); document.body.removeChild(btn);
-                  closeModal();
-                  showToast("Data berhasil di-export!", "success");
-                }}
-                variant="success"
-                icon="download"
-              >
-                Download CSV
-              </Btn>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <Btn onClick={() => {
+                const { rows } = getAllExportData();
+                const esc = (v) => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = '\t' + s; return /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+                const lines = [
+                  [esc("Aplikasi"), esc("Finly")].join(","),
+                  [esc("Tanggal Export"), esc(new Date().toLocaleString("id-ID"))].join(","),
+                  [esc("Total Transaksi"), rows.length].join(","),
+                  "",
+                  [esc("Tanggal"), esc("Tipe"), esc("Metode"), esc("Kategori"), esc("Catatan"), esc("Jumlah")].join(","),
+                  ...rows.map(r => [esc(r.tanggal), esc(r.tipe), esc(r.metode), esc(r.kategori), esc(r.catatan), r.jumlah].join(",")),
+                ];
+                const csv = "\uFEFF" + lines.join("\n");
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a"); a.href = url; a.download = `finly-laporan-${today}.csv`; a.click();
+                URL.revokeObjectURL(url);
+                closeModal();
+                showToast("CSV berhasil di-export!", "success");
+              }} variant="ghost" icon="download">CSV</Btn>
+              <Btn onClick={() => {
+                try { exportPDF(); } catch (e) { showToast("Gagal export PDF: " + e.message, "error"); }
+              }} variant="ghost" icon="download">PDF</Btn>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <Btn onClick={() => {
+                try { exportExcel(); } catch (e) { showToast("Gagal export Excel: " + e.message, "error"); }
+              }} variant="ghost" icon="download">Excel (XLSX)</Btn>
+              <Btn onClick={() => {
+                const exportDates = Object.keys(data).sort();
+                let exportTx = 0;
+                const dateRange = exportDates.length > 0 ? { from: exportDates[0], to: exportDates[exportDates.length - 1] } : null;
+                exportDates.forEach(tgl => { exportTx += (data[tgl]?.transaksi?.length ?? 0); });
+                const exportData = {
+                  data,
+                  exportedAt: new Date().toISOString(),
+                  version,
+                  appName: "Finly",
+                  metadata: {
+                    totalDays: exportDates.length,
+                    totalTransactions: exportTx,
+                    dateRange,
+                  },
+                };
+                const json = JSON.stringify(exportData, null, 2);
+                const blob = new Blob([json], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a"); a.href = url; a.download = `finly-backup-${today}.json`; a.click();
+                URL.revokeObjectURL(url);
+                closeModal();
+                showToast("Backup JSON berhasil!", "success");
+              }} variant="ghost" icon="download">Backup JSON</Btn>
             </div>
             <div style={{ marginTop: 10 }}>
               <Btn onClick={closeModal} variant="ghost" fullWidth>Tutup</Btn>
             </div>
           </div>
+        </Modal>
+
+        {/* Import preview */}
+        <Modal show={modal === "importPreview"} onClose={() => { if (!importLoading) { closeModal(); setImportPreview(null); } }} title="Preview Import Data">
+          {importPreview && (
+            <div>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16, background: "var(--accent-subtle)",
+                display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
+              }}>
+                <Icon name="upload" size={24} color="var(--accent)" />
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ background: "var(--input-bg)", borderRadius: 12, padding: "12px", textAlign: "center" }}>
+                    <p style={{ margin: "0 0 4px", fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>Hari</p>
+                    <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "var(--text)" }}>{importPreview.days}</p>
+                  </div>
+                  <div style={{ background: "var(--input-bg)", borderRadius: 12, padding: "12px", textAlign: "center" }}>
+                    <p style={{ margin: "0 0 4px", fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>Transaksi</p>
+                    <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "var(--text)" }}>{importPreview.totalTx}</p>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 12, textAlign: "center" }}>
+                  <p style={{ margin: "0 0 2px" }}>Rentang: {importPreview.dateRange}</p>
+                  <p style={{ margin: 0 }}>Versi file: {importPreview.version}</p>
+                </div>
+              </div>
+              <p style={{ color: "var(--text-secondary)", fontSize: 13, textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
+                Pilih mode import:
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <Btn onClick={() => doImport("merge")} variant="primary" icon="plus" disabled={importLoading}>
+                  {importLoading ? "Memproses..." : "Gabung"}
+                </Btn>
+                <Btn onClick={() => doImport("overwrite")} variant="danger" icon="trash" disabled={importLoading}>
+                  {importLoading ? "Memproses..." : "Timpa"}
+                </Btn>
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", marginTop: 8 }}>
+                Gabung: tambahkan data import ke data yang ada. Timpa: ganti semua data saat ini.
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <Btn onClick={() => { closeModal(); setImportPreview(null); }} variant="ghost" fullWidth disabled={importLoading}>Batal</Btn>
+              </div>
+            </div>
+          )}
         </Modal>
       </div>
     </>
