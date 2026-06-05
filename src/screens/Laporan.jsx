@@ -540,7 +540,8 @@ export default function LaporanScreen({
           <button onClick={async () => {
             try {
               const { default: jspdf } = await import("jspdf");
-              await import("jspdf-autotable");
+              const { applyPlugin } = await import("jspdf-autotable");
+              applyPlugin(jspdf);
               const esc = (v) => String(v ?? "");
               const allDates = filteredDates;
               let totalMasuk = 0, totalKeluar = 0;

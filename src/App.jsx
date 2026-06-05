@@ -608,7 +608,8 @@ export default function App() {
   const exportPDF = useCallback(async () => {
     try {
       const { default: jspdf } = await import("jspdf");
-      await import("jspdf-autotable");
+      const { applyPlugin } = await import("jspdf-autotable");
+      applyPlugin(jspdf);
       const { rows, totalMasuk, totalKeluar, totalTransaksi, saldoBersih } = getAllExportData();
       const doc = new jspdf({ orientation: "landscape", unit: "mm", format: "a4" });
       doc.setFontSize(16);
