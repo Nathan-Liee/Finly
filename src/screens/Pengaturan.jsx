@@ -31,7 +31,7 @@ function SettingRow({ icon, iconColor, title, subtitle, action, danger, toggle, 
       {/* Icon */}
       <div style={{
         width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-        background: danger ? "var(--danger-subtle)" : (iconColor ? `${iconColor}-subtle` : "var(--accent-subtle)"),
+        background: danger ? "var(--danger-subtle)" : (iconColor ? iconColor.replace(")", "-subtle)") : "var(--accent-subtle)"),
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         <Icon name={icon} size={16} color={danger ? "var(--danger)" : (iconColor || "var(--accent)")} />

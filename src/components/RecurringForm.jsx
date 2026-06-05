@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal  from "./Modal";
 import Btn   from "./Button";
 import Field from "./Field";
@@ -14,6 +14,21 @@ export default function RecurringForm({ show, onClose, kategoriList, addRecurrin
   const [recKategori, setRecKategori] = useState("");
   const [recCatatan, setRecCatatan] = useState("");
   const [recSaved, setRecSaved] = useState(false);
+
+  // Reset form whenever modal opens
+  useEffect(() => {
+    if (show) {
+      setRecFrequency("monthly");
+      setRecDayOfWeek(1);
+      setRecDayOfMonth(1);
+      setRecType("keluar");
+      setRecJumlah("");
+      setRecMetode("cash");
+      setRecKategori("");
+      setRecCatatan("");
+      setRecSaved(false);
+    }
+  }, [show]);
 
   const handleRecSave = () => {
     const n = parseInt(recJumlah.replace(/\./g, ""));

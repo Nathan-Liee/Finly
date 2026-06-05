@@ -171,7 +171,7 @@ export default function LaporanScreen({
     lines.push([esc("Tanggal"), esc("Tipe"), esc("Metode"), esc("Kategori"), esc("Catatan"), esc("Jumlah")].join(","));
     filteredDates.forEach(tgl => {
       const c = calc(tgl);
-      c.transaksi?.forEach(t => {
+      filteredTx(c.transaksi)?.forEach(t => {
         lines.push([
           esc(tgl), esc(t.type === "masuk" ? "Pemasukan" : "Pengeluaran"),
           esc(t.metode?.toUpperCase() || "-"), esc(t.kategori || "-"),
@@ -547,7 +547,7 @@ export default function LaporanScreen({
               const rows = [];
               allDates.forEach(tgl => {
                 const c = calc(tgl);
-                c.transaksi?.forEach(t => {
+                filteredTx(c.transaksi)?.forEach(t => {
                   const r = { tanggal: tgl, tipe: t.type === "masuk" ? "Pemasukan" : "Pengeluaran", metode: (t.metode || "cash").toUpperCase(), kategori: t.kategori || "-", catatan: t.catatan || "-", jumlah: t.jumlah ?? 0 };
                   if (t.type === "masuk") totalMasuk += t.jumlah ?? 0; else totalKeluar += t.jumlah ?? 0;
                   rows.push(r);
@@ -575,7 +575,7 @@ export default function LaporanScreen({
               const rows = [];
               allDates.forEach(tgl => {
                 const c = calc(tgl);
-                c.transaksi?.forEach(t => {
+                filteredTx(c.transaksi)?.forEach(t => {
                   rows.push([tgl, t.type === "masuk" ? "Pemasukan" : "Pengeluaran", (t.metode || "cash").toUpperCase(), t.kategori || "-", t.catatan || "-", t.jumlah ?? 0]);
                 });
               });

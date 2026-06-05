@@ -107,7 +107,7 @@ export default function App() {
         else { delete current._total; if (Object.keys(current).length === 0) delete next[monthKey]; }
       } else {
         // Per-kategori budget
-        if (amount > 0) current[kategori] = { amount, spent: 0 };
+        if (amount > 0) current[kategori] = { amount };
         else { delete current[kategori]; if (Object.keys(current).length === 0) delete next[monthKey]; }
       }
       if (Object.keys(current).length > 0) next[monthKey] = current;
@@ -559,15 +559,21 @@ export default function App() {
     setModal("konfirmHapus");
   }, [setHapusIdx, setSelectedDate, setModal, today]);
 
-  const handleDeleteAllTx = useCallback((tanggal) => {
+  const handleDeleteAllTx = useCallback(async (tanggal) => {
     setData(prev => {
       const next = { ...prev };
       if (next[tanggal]) {
         next[tanggal] = { ...next[tanggal], transaksi: [] };
       }
-      try { localStorage.setItem("finly-data", JSON.stringify(next)); } catch {}
       return next;
     });
+    // Persist to IndexedDB so deleted data doesn't reappear on reload
+    try {
+      const { saveTransaksiLocal } = await import("./db/index.js");
+      await saveTransaksiLocal(tanggal, []);
+    } catch (e) {
+      console.warn("[handleDeleteAllTx] IndexedDB save failed:", e);
+    }
   }, [setData]);
 
   const updateKategoriList = useCallback((newList) => {
@@ -754,6 +760,7 @@ export default function App() {
     setImportLoading(true);
     try {
       const importedData = importPreview.data;
+      let mergedData;
       setData(prev => {
         let merged;
         if (mode === "overwrite") {
@@ -773,9 +780,24 @@ export default function App() {
             }
           });
         }
+        mergedData = merged;
         try { localStorage.setItem("kasapp-data", JSON.stringify(merged)); } catch {}
         return merged;
       });
+      // Persist to IndexedDB so data survives reload
+      const { saveAllToLocal } = await import("./db/index.js");
+      const kasHarian = Object.keys(mergedData).filter(tgl => mergedData[tgl].uang_awal != null).map(tgl => ({
+        tanggal: tgl,
+        uang_awal: mergedData[tgl].uang_awal,
+      }));
+      const transaksi = [];
+      Object.keys(mergedData).forEach(tgl => {
+        (mergedData[tgl]?.transaksi || []).forEach(t => {
+          transaksi.push({ ...t, tanggal: tgl });
+        });
+      });
+      await saveAllToLocal(kasHarian, transaksi);
+
       closeModal();
       setImportPreview(null);
       showToast(`Import berhasil! (mode: ${mode === "overwrite" ? "timpa" : "gabung"})`, "success");
