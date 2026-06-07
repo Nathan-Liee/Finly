@@ -8,6 +8,7 @@ import Field from "./components/Field";
 import Icon  from "./components/Icon";
 import Toast from "./components/Toast";
 import RecurringForm from "./components/RecurringForm";
+import TagSelector from "./components/TagSelector";
 
 const HomeScreen = lazy(() => import("./screens/Home"));
 const LaporanScreen = lazy(() => import("./screens/Laporan"));
@@ -53,6 +54,14 @@ export default function App() {
   const [importPreview, setImportPreview] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
 
+  /* ─── Reminder Preferences ─── */
+  const [reminderPrefs, setReminderPrefs] = useState(() => {
+    try {
+      const stored = localStorage.getItem("finly-reminder");
+      return stored ? JSON.parse(stored) : { enabled: false, time: '08:00' };
+    } catch { return { enabled: false, time: '08:00' }; }
+  });
+
   // Form states
   const [formJumlah,    setFormJumlah]    = useState("");
   const [formMetode,    setFormMetode]    = useState("cash");
@@ -68,6 +77,8 @@ export default function App() {
   const [formEditMetode,  setFormEditMetode]  = useState("cash");
   const [formEditKategori,setFormEditKategori]= useState("");
   const [formEditCatatan, setFormEditCatatan] = useState("");
+  const [formTag, setFormTag] = useState(null);
+  const [formEditTag, setFormEditTag] = useState(null);
   const [resetStart,   setResetStart]   = useState("");
   const [resetEnd,     setResetEnd]     = useState("");
   const [resetUangAwal,setResetUangAwal]= useState(false);
@@ -80,15 +91,36 @@ export default function App() {
     }
   });
 
+  /* ─── Tag list ─── */
+  const [tagList, setTagList] = useState(() => {
+    try {
+      const stored = localStorage.getItem("finly-tags");
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
   /* ─── Budget bulanan ─── */
   const [budgetMap, setBudgetMap] = useState(() => {
     try {
       const stored = localStorage.getItem("finly-budget");
       const parsed = stored ? JSON.parse(stored) : {};
-      // Backward compat: convert old number format to new object format
+      // Backward compat: convert old number format to new object format + add rollover field
       Object.keys(parsed).forEach(k => {
         if (typeof parsed[k] === 'number') {
           parsed[k] = {};
+        } else if (typeof parsed[k] === 'object') {
+          Object.keys(parsed[k]).forEach(kat => {
+            if (kat === '_total') return;
+            const v = parsed[k][kat];
+            // Old format: just a number
+            if (typeof v === 'number') {
+              parsed[k][kat] = { amount: v, rollover: false };
+            }
+            // Old format: { amount: X } without rollover
+            else if (v && typeof v === 'object' && v.rollover === undefined) {
+              parsed[k][kat] = { ...v, rollover: false };
+            }
+          });
         }
       });
       return parsed;
@@ -106,8 +138,11 @@ export default function App() {
         if (amount > 0) current._total = amount;
         else { delete current._total; if (Object.keys(current).length === 0) delete next[monthKey]; }
       } else {
-        // Per-kategori budget
-        if (amount > 0) current[kategori] = { amount };
+        // Per-kategori budget — preserve existing rollover flag
+        if (amount > 0) {
+          const existing = current[kategori] || {};
+          current[kategori] = { amount, rollover: existing.rollover ?? false };
+        }
         else { delete current[kategori]; if (Object.keys(current).length === 0) delete next[monthKey]; }
       }
       if (Object.keys(current).length > 0) next[monthKey] = current;
@@ -115,6 +150,88 @@ export default function App() {
       return next;
     });
   }, []);
+
+  const toggleBudgetRollover = useCallback((monthKey, kategori) => {
+    setBudgetMap(prev => {
+      const next = { ...prev };
+      const current = typeof prev[monthKey] === 'number' ? {} : (prev[monthKey] || {});
+      const existing = current[kategori] || { amount: 0, rollover: false };
+      current[kategori] = { amount: existing.amount || 0, rollover: !existing.rollover };
+      next[monthKey] = current;
+      try { localStorage.setItem("finly-budget", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  /* ─── Budget Rollover ─── */
+  useEffect(() => {
+    if (!data || Object.keys(data).length === 0) return;
+
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    // Cek apakah rollover udah diterapkan bulan ini
+    let lastRollover;
+    try { lastRollover = localStorage.getItem("finly-rollover-month"); } catch { lastRollover = null; }
+    if (lastRollover === currentMonth) return;
+
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
+
+    // Hitung pengeluaran per kategori bulan lalu
+    const prevSpending = {};
+    Object.keys(data).forEach(tgl => {
+      if (tgl.startsWith(prevMonth)) {
+        (data[tgl]?.transaksi ?? []).forEach(t => {
+          if (t.type === 'keluar') {
+            const k = t.kategori || 'Lainnya';
+            prevSpending[k] = (prevSpending[k] || 0) + (t.jumlah || 0);
+          }
+        });
+      }
+    });
+
+    setBudgetMap(prevBudgetMap => {
+      const prevBudget = prevBudgetMap[prevMonth];
+      if (!prevBudget || typeof prevBudget !== 'object') {
+        try { localStorage.setItem("finly-rollover-month", currentMonth); } catch {}
+        return prevBudgetMap;
+      }
+
+      const next = { ...prevBudgetMap };
+      const currentBudget = next[currentMonth] ? { ...next[currentMonth] } : {};
+      let changed = false;
+
+      Object.keys(prevBudget).forEach(kat => {
+        if (kat === '_total') return;
+        const katData = prevBudget[kat];
+        if (!katData || typeof katData !== 'object' || !katData.rollover) return;
+        const katAmount = katData.amount || 0;
+        if (katAmount <= 0) return;
+
+        const katSpent = prevSpending[kat] || 0;
+        const leftover = katAmount - katSpent;
+        if (leftover <= 0) return;
+
+        const existing = currentBudget[kat] || { amount: 0, rollover: false };
+        currentBudget[kat] = {
+          amount: (existing.amount || 0) + leftover,
+          rollover: existing.rollover ?? false,
+        };
+        changed = true;
+      });
+
+      if (changed) {
+        next[currentMonth] = currentBudget;
+        try { localStorage.setItem("finly-budget", JSON.stringify(next)); } catch {}
+        // Notify user — use setTimeout to avoid setState during render
+        setTimeout(() => showToast("Sisa budget bulan lalu di-rollover! ⏪", "info"), 500);
+      }
+
+      try { localStorage.setItem("finly-rollover-month", currentMonth); } catch {}
+      return next;
+    });
+  }, [data]);
 
   /* ─── Recurring Transactions ─── */
   const [recurringRules, setRecurringRules] = useState(() => {
@@ -138,6 +255,11 @@ export default function App() {
       try { localStorage.setItem("finly-recurring", JSON.stringify(next)); } catch {}
       return next;
     });
+  }, []);
+
+  const updateReminderPrefs = useCallback((prefs) => {
+    setReminderPrefs(prefs);
+    try { localStorage.setItem("finly-reminder", JSON.stringify(prefs)); } catch {}
   }, []);
 
   /* ─── Auto-apply recurring transactions ─── */
@@ -285,6 +407,72 @@ export default function App() {
     syncData();
   }, [isOnline, user]);
 
+  /* ─── Reminder Notification ─── */
+  useEffect(() => {
+    if (!reminderPrefs.enabled) return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    const checkReminder = () => {
+      if (Notification.permission !== "granted") return;
+      const now = new Date();
+      const currentHour = String(now.getHours()).padStart(2, '0');
+      const currentMin = String(now.getMinutes()).padStart(2, '0');
+      const currentTime = `${currentHour}:${currentMin}`;
+      if (currentTime !== reminderPrefs.time) return;
+
+      // Already sent today?
+      const todayStr = getCurrentDate();
+      try {
+        const sentData = JSON.parse(localStorage.getItem("finly-reminder-sent") || "{}");
+        if (sentData.date === todayStr) return;
+      } catch { /* ignore */ }
+
+      // Find due recurring rules
+      const nowDate = new Date();
+      const todayDOW = nowDate.getDay();
+      const todayDOM = nowDate.getDate();
+      const dueRules = recurringRules.filter(rule => {
+        if (rule.frequency === 'daily') return true;
+        if (rule.frequency === 'weekly' && rule.dayOfWeek === todayDOW) return true;
+        if (rule.frequency === 'monthly' && rule.dayOfMonth === todayDOM) return true;
+        return false;
+      });
+      if (dueRules.length === 0) return;
+
+      const total = dueRules.length;
+      const masukCount = dueRules.filter(r => r.type === 'masuk').length;
+      const keluarCount = dueRules.filter(r => r.type === 'keluar').length;
+      let body = "";
+      if (masukCount > 0 && keluarCount > 0) {
+        body = `${masukCount} pemasukan, ${keluarCount} pengeluaran jatuh tempo hari ini`;
+      } else if (masukCount > 0) {
+        body = `${masukCount} pemasukan berulang jatuh tempo hari ini`;
+      } else {
+        body = `${keluarCount} pengeluaran berulang jatuh tempo hari ini`;
+      }
+
+      try {
+        const notif = new Notification("Finly — Pengingat Transaksi Berulang", {
+          body,
+          icon: "/logo.png",
+        });
+        setTimeout(() => notif.close(), 5000);
+      } catch (e) {
+        console.warn("[Reminder] Gagal kirim notifikasi:", e);
+      }
+
+      // Mark sent
+      try { localStorage.setItem("finly-reminder-sent", JSON.stringify({ date: todayStr })); } catch {}
+    };
+
+    const interval = setInterval(checkReminder, 30000);
+    const timeout = setTimeout(checkReminder, 1000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [reminderPrefs.enabled, reminderPrefs.time, recurringRules]);
+
   /* ─── Keyboard shortcuts ─── */
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -322,6 +510,7 @@ export default function App() {
     setFormUangAwal(""); setHapusIdx(null);
     setEditIdx(null); setFormEditJumlah(""); setFormEditMetode("cash");
     setFormEditKategori(""); setFormEditCatatan("");
+    setFormTag(null); setFormEditTag(null);
     setResetStart(""); setResetEnd(""); setResetUangAwal(false);
     setImportPreview(null);
   };
@@ -372,7 +561,7 @@ export default function App() {
     try {
       // Compute new transaction array ONCE to avoid stale closure issues
       const prevTx = data[today]?.transaksi ?? [];
-      const newTx = { type: "masuk", jumlah: n, metode: formMetode };
+      const newTx = { type: "masuk", jumlah: n, metode: formMetode, tag: formTag };
       const updatedTx = [...prevTx, newTx];
 
       setData(prev => {
@@ -399,7 +588,7 @@ export default function App() {
     try {
       // Compute new transaction array ONCE to avoid stale closure issues
       const prevTx = data[today]?.transaksi ?? [];
-      const newTx = { type: "keluar", jumlah: n, kategori: formKategori || "Lainnya", catatan: formCatatan || "-" };
+      const newTx = { type: "keluar", jumlah: n, kategori: formKategori || "Lainnya", catatan: formCatatan || "-", tag: formTag };
       const updatedTx = [...prevTx, newTx];
 
       setData(prev => {
@@ -485,7 +674,7 @@ export default function App() {
       if (!t) return closeModal();
       const updatedTx = d[tgl].transaksi.map((item, i) =>
         i === editIdx
-          ? { ...item, jumlah: n, ...(t.type === "masuk" ? { metode: formEditMetode } : { kategori: formEditKategori || "Lainnya", catatan: formEditCatatan || "-" }) }
+          ? { ...item, jumlah: n, tag: formEditTag, ...(t.type === "masuk" ? { metode: formEditMetode } : { kategori: formEditKategori || "Lainnya", catatan: formEditCatatan || "-" }) }
           : item
       );
       d[tgl].transaksi = updatedTx;
@@ -549,9 +738,10 @@ export default function App() {
     setFormEditMetode(t.metode || "cash");
     setFormEditKategori(t.kategori || "");
     setFormEditCatatan(t.catatan || "");
+    setFormEditTag(t.tag || null);
     setSelectedDate(tgl);
     setModal("editTransaksi");
-  }, [data, today, setEditIdx, setFormEditJumlah, setFormEditMetode, setFormEditKategori, setFormEditCatatan, setSelectedDate, setModal]);
+  }, [data, today, setEditIdx, setFormEditJumlah, setFormEditMetode, setFormEditKategori, setFormEditCatatan, setFormEditTag, setSelectedDate, setModal]);
 
   const handleDeleteTx = useCallback((idx, tanggal) => {
     setHapusIdx(idx);
@@ -579,6 +769,11 @@ export default function App() {
   const updateKategoriList = useCallback((newList) => {
     setKategoriList(newList);
     try { localStorage.setItem("finly-kategori", JSON.stringify(newList)); } catch {}
+  }, []);
+
+  const updateTagList = useCallback((newList) => {
+    setTagList(newList);
+    try { localStorage.setItem("finly-tags", JSON.stringify(newList)); } catch {}
   }, []);
 
   /* ─── Export helpers (moved BEFORE early returns to avoid hook count mismatch) ─── */
@@ -974,6 +1169,7 @@ export default function App() {
               onDeleteTx={handleDeleteTx}
               budgetMap={budgetMap}
               kategoriList={kategoriList}
+              tagList={tagList}
             />
           </div>
         )}
@@ -986,6 +1182,7 @@ export default function App() {
               onEditTx={handleEditTx} onDeleteTx={handleDeleteTx}
               onDeleteAllTx={handleDeleteAllTx}
               onEditUangAwal={(tgl) => { setUbahTarget(tgl); setFormUangAwal(String(data[tgl]?.uang_awal ?? "0")); setModal("ubahAwal"); }}
+              tagList={tagList}
             />
           </div>
         )}
@@ -998,9 +1195,11 @@ export default function App() {
               onResetUangAwal={async (tanggal) => { await doUbahAwal(0, tanggal); }}
               onLogout={async () => { try { await supabase.auth.signOut(); } catch{} setUser(null); setData({}); setProfile(null); setTab("home"); }}
               kategoriList={kategoriList} onUpdateKategori={updateKategoriList}
-              budgetMap={budgetMap} onUpdateBudget={updateBudget}
+              budgetMap={budgetMap} onUpdateBudget={updateBudget} onToggleRollover={toggleBudgetRollover}
               recurringRules={recurringRules} onAddRecurringRule={addRecurringRule} onRemoveRecurringRule={removeRecurringRule}
               onOpenImport={handleOpenImport} installPrompt={installPrompt}
+              reminderPrefs={reminderPrefs} onUpdateReminder={updateReminderPrefs}
+              tagList={tagList} onUpdateTag={updateTagList}
             />
           </div>
         )}
@@ -1075,6 +1274,7 @@ export default function App() {
               </button>
             ))}
           </div>
+          <TagSelector tagList={tagList} value={formTag} onChange={setFormTag} />
           <Btn onClick={doMasuk} variant="success" icon="plus" disabled={isSubmitting} fullWidth>Tambah Pemasukan</Btn>
         </Modal>
 
@@ -1093,6 +1293,7 @@ export default function App() {
             {kategoriList.map(k => <option key={k} value={k}>{k}</option>)}
           </select>
           <Field label="Catatan" value={formCatatan} onChange={setFormCatatan} placeholder="Opsional" onKeyDown={(e) => { if (e.key === "Enter" && !isSubmitting) doKeluar(); }} />
+          <TagSelector tagList={tagList} value={formTag} onChange={setFormTag} />
           <Btn onClick={doKeluar} variant="danger" icon="minus" disabled={isSubmitting || !formKategori} fullWidth>Tambah Pengeluaran</Btn>
         </Modal>
 
@@ -1195,6 +1396,7 @@ export default function App() {
                       onKeyDown={(e) => { if (e.key === "Enter" && !isSubmitting) doEdit(); }} />
                   </>
                 )}
+                <TagSelector tagList={tagList} value={formEditTag} onChange={setFormEditTag} />
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <Btn onClick={closeModal} variant="ghost">Batal</Btn>
                   <Btn onClick={doEdit} icon="check" disabled={isSubmitting}>Simpan</Btn>

@@ -23,7 +23,7 @@
 
 | | |
 |---|---|
-| **Version** | v1.14.0 |
+| **Version** | v1.15.0 |
 | **Live** | [finly-mauve.vercel.app](https://finly-mauve.vercel.app) |
 | **Build** | ![Build](https://img.shields.io/badge/build-passing-brightgreen) |
 | **License** | ![License](https://img.shields.io/badge/license-MIT-blue) |
@@ -82,6 +82,10 @@ npm run dev
 ## 📋 Changelog
 
 > Changelog otomatis diperbarui setiap hari oleh AI agent.
+### 2026-06-08 (v1.15.0)
+- 🏷️ Label/tag kustom — buat tag, filter transaksi by tag di Home & Laporan
+- ⏪ Budget rollover — sisa budget bulan lalu pindah ke bulan ini (toggle per kategori)
+- 🔔 Notifikasi reminder — browser notification untuk recurring transactions (atur jam)
 ### 2026-06-05 (v1.14.0)
 - 🖥️ Desktop mode — responsive sidebar navigasi (≥768px)
 - 📄 Export PDF (jsPDF) + Excel (xlsx) langsung dari Laporan
@@ -118,5 +122,5 @@ npm run dev
 ---
 
 <p align="center">
-  Dibuat dengan ❤️ | Finly v1.14.0
+  Dibuat dengan ❤️ | Finly v1.15.0
 </p>

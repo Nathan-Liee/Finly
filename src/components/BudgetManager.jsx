@@ -2,7 +2,7 @@ import { useState } from "react";
 import { formatUang } from "../utils/format";
 
 /* ─── Budget row per kategori ─── */
-function BudgetKatRow({ kat, currentAmount, onSave, spentAmount }) {
+function BudgetKatRow({ kat, currentAmount, spentAmount, rollover, onSave, onToggleRollover }) {
   const [katInput, setKatInput] = useState(String(currentAmount || ""));
 
   return (
@@ -27,11 +27,26 @@ function BudgetKatRow({ kat, currentAmount, onSave, spentAmount }) {
           {formatUang(spentAmount)} / {formatUang(currentAmount)}
         </span>
       )}
+      {/* Rollover toggle */}
+      <button
+        onClick={onToggleRollover}
+        title={rollover ? "Rollover aktif: sisa budget akan pindah ke bulan depan" : "Rollover nonaktif"}
+        style={{
+          padding: "4px 8px", borderRadius: 6, border: "none",
+          background: rollover ? "var(--success-subtle)" : "var(--input-bg)",
+          color: rollover ? "var(--success)" : "var(--text-muted)",
+          fontSize: 10, fontWeight: 700, cursor: "pointer",
+          whiteSpace: "nowrap",
+          fontFamily: "'Inter', sans-serif",
+        }}
+      >
+        {rollover ? "⏪ Aktif" : "Rollover"}
+      </button>
     </div>
   );
 }
 
-export default function BudgetManager({ budgetMap, onUpdateBudget, kategoriList, data }) {
+export default function BudgetManager({ budgetMap, onUpdateBudget, onToggleRollover, kategoriList, data }) {
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const budgetData = budgetMap[currentMonthKey] ?? {};
@@ -63,6 +78,10 @@ export default function BudgetManager({ budgetMap, onUpdateBudget, kategoriList,
   const handleSaveKat = (kat, amount) => {
     onUpdateBudget(currentMonthKey, kat, amount);
     setBudgetSaved(true);
+  };
+
+  const handleToggleRollover = (kat) => {
+    onToggleRollover(currentMonthKey, kat);
   };
 
   return (
@@ -121,6 +140,7 @@ export default function BudgetManager({ budgetMap, onUpdateBudget, kategoriList,
             </p>
             {kategoriList.filter(k => k !== 'Lainnya').map(kat => {
               const katBudget = typeof budgetData === 'object' ? (budgetData[kat]?.amount || 0) : 0;
+              const katRollover = typeof budgetData === 'object' ? (budgetData[kat]?.rollover || false) : false;
               const katSpent = spentMap[kat] || 0;
               return (
                 <BudgetKatRow
@@ -128,7 +148,9 @@ export default function BudgetManager({ budgetMap, onUpdateBudget, kategoriList,
                   kat={kat}
                   currentAmount={katBudget}
                   spentAmount={katSpent}
+                  rollover={katRollover}
                   onSave={(amount) => handleSaveKat(kat, amount)}
+                  onToggleRollover={() => handleToggleRollover(kat)}
                 />
               );
             })}

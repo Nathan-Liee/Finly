@@ -114,6 +114,54 @@ function Divider() {
   return <div style={{ height: 1, background: "var(--border)", margin: "0 16px" }} />;
 }
 
+/* ─── Add Tag Form ─── */
+function AddTagForm({ tagList, onUpdateTag }) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState("#6B7EFF");
+  const colores = ["#6B7EFF","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899","#06B6D4","#F97316"];
+
+  const handleAdd = () => {
+    if (!name.trim()) return;
+    const newTag = { id: "tag_" + Date.now(), name: name.trim(), color };
+    onUpdateTag([...tagList, newTag]);
+    setName("");
+    setColor("#6B7EFF");
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+      <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", fontFamily: "'Inter', sans-serif" }}>Tambah Tag Baru</p>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          value={name} onChange={e => setName(e.target.value)}
+          placeholder="Nama tag..."
+          onKeyDown={e => { if (e.key === "Enter") handleAdd(); }}
+          style={{
+            flex: 1, padding: "8px 12px", borderRadius: 10,
+            border: "1px solid var(--border)", background: "var(--input-bg)",
+            color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif",
+            outline: "none",
+          }}
+        />
+        <div style={{ display: "flex", gap: 3 }}>
+          {colores.map(c => (
+            <button key={c} onClick={() => setColor(c)} style={{
+              width: 20, height: 20, borderRadius: "50%", border: color === c ? "2px solid var(--text)" : "1px solid var(--border)",
+              background: c, cursor: "pointer", flexShrink: 0,
+            }} />
+          ))}
+        </div>
+        <button onClick={handleAdd} style={{
+          padding: "8px 14px", borderRadius: 10, border: "none",
+          background: "var(--accent)", color: "#fff",
+          fontSize: 12, fontWeight: 700, cursor: "pointer",
+          fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap",
+        }}>Tambah</button>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════
  *  MAIN COMPONENT
  * ═══════════════════════════════════════════ */
@@ -123,9 +171,11 @@ export default function PengaturanScreen({
   setUbahTarget, setFormUangAwal, setModal,
   profile, setProfile, user, onResetUangAwal, onLogout,
   kategoriList, onUpdateKategori,
-  budgetMap, onUpdateBudget,
+  budgetMap, onUpdateBudget, onToggleRollover,
   recurringRules, onAddRecurringRule, onRemoveRecurringRule,
   onOpenImport, installPrompt,
+  reminderPrefs, onUpdateReminder,
+  tagList, onUpdateTag,
 }) {
   /* ─── Profile editing ─── */
   const [editMode, setEditMode] = useState(null); // "username" | "password" | null
@@ -785,6 +835,76 @@ export default function PengaturanScreen({
       </SettingsCard>
 
       {/* ═══════════════════════════════════════ */}
+      {/*  NOTIFIKASI                              */}
+      {/* ═══════════════════════════════════════ */}
+      <SectionHeader title="Notifikasi" />
+      <SettingsCard>
+        <SettingRow
+          icon="bell" iconColor="var(--info)"
+          title="Pengingat Transaksi Berulang"
+          subtitle={reminderPrefs.enabled ? `Aktif — ${reminderPrefs.time}` : "Nonaktif"}
+          toggle={reminderPrefs.enabled}
+          action={() => onUpdateReminder({ ...reminderPrefs, enabled: !reminderPrefs.enabled })}
+        />
+        {reminderPrefs.enabled && (
+          <>
+            <Divider />
+            <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", flex: 1, fontFamily: "'Inter', sans-serif" }}>
+                Jam Pengingat
+              </label>
+              <input
+                type="time"
+                value={reminderPrefs.time}
+                onChange={(e) => onUpdateReminder({ ...reminderPrefs, time: e.target.value })}
+                style={{
+                  padding: "8px 14px", borderRadius: 10, border: "1px solid var(--border)",
+                  background: "var(--input-bg)", color: "var(--text)", fontSize: 14,
+                  fontFamily: "'Inter', sans-serif", outline: "none",
+                }}
+              />
+            </div>
+          </>
+        )}
+      </SettingsCard>
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  LABEL / TAG                            */}
+      {/* ═══════════════════════════════════════ */}
+      <SectionHeader title="Label / Tag" />
+      <SettingsCard>
+        <div style={{ padding: "12px 16px" }}>
+          <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>
+            Kelola label untuk transaksi
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {tagList.map(tag => (
+              <div key={tag.id} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 12px", borderRadius: 10,
+                background: "var(--input-bg)",
+              }}>
+                <span style={{ width: 10, height: 10, borderRadius: "50%", background: tag.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
+                  {tag.name}
+                </span>
+                <button onClick={() => {
+                  const filtered = tagList.filter(t => t.id !== tag.id);
+                  onUpdateTag(filtered);
+                }} style={{
+                  padding: "4px 8px", borderRadius: 6, border: "none",
+                  background: "var(--danger-subtle)", color: "var(--danger)",
+                  fontSize: 11, fontWeight: 700, cursor: "pointer",
+                  fontFamily: "'Inter', sans-serif",
+                }}>Hapus</button>
+              </div>
+            ))}
+          </div>
+          <AddTagForm tagList={tagList} onUpdateTag={onUpdateTag} />
+        </div>
+      </SettingsCard>
+
+      {/* ═══════════════════════════════════════ */}
       {/*  UANG AWAL                               */}
       {/* ═══════════════════════════════════════ */}
       {data[today] != null && data[today].uang_awal != null ? (
@@ -910,6 +1030,7 @@ export default function PengaturanScreen({
       <BudgetManager
         budgetMap={budgetMap}
         onUpdateBudget={onUpdateBudget}
+        onToggleRollover={onToggleRollover}
         kategoriList={kategoriList}
         data={data}
       />

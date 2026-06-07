@@ -24,6 +24,10 @@
 
 ## 🟢 Done
 
+- [x] Label/tag kustom — filter transaksi by tag [🎨 UI/UX]
+- [x] Budget rollover — sisa budget bulan lalu pindah ke bulan ini [⚛️ Dev]
+- [x] Notifikasi reminder — pengingat transaksi berulang via browser [🗄️ DB/Audit/PWA]
+
 - [x] Desktop mode — responsive sidebar untuk layar lebar
 - [x] Dark mode toggle
 - [x] Grafik dashboard — chart pemasukan vs pengeluaran per bulan

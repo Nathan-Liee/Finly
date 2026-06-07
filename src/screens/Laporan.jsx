@@ -100,11 +100,13 @@ export default function LaporanScreen({
   modalOpen, setModal, closeModal,
   onEditTx, onDeleteTx, onDeleteAllTx,
   onEditUangAwal,
+  tagList,
 }) {
   const [activeTab, setActiveTab] = useState("harian");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all"); // all | masuk | keluar
   const [filterMetode, setFilterMetode] = useState("all"); // all | cash | qris
+  const [filterTag, setFilterTag] = useState(null);
 
   /* ─── Scroll to top on tab/filter change ─── */
   useEffect(() => {
@@ -138,10 +140,11 @@ export default function LaporanScreen({
     }
     if (filterType !== "all") result = result.filter(t => t.type === filterType);
     if (filterMetode !== "all") result = result.filter(t => (t.metode || "cash") === filterMetode);
+    if (filterTag) result = result.filter(t => t.tag === filterTag);
     return result;
   };
 
-  /* ─── Compute totals (respects search + filter) ─── */
+  /* ─── Filter dates by tag ─── */
   let totalMasuk = 0, totalKeluar = 0, totalTx = 0;
   filteredDates.forEach(tgl => {
     const c = calc(tgl);
@@ -665,6 +668,35 @@ export default function LaporanScreen({
             </button>
           ))}
         </div>
+        {/* Tag filter */}
+        {tagList && tagList.length > 0 && (
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            <button onClick={() => setFilterTag(null)} style={{
+              padding: "5px 12px", borderRadius: 16, border: "none",
+              background: !filterTag ? "var(--accent)" : "var(--surface)",
+              color: !filterTag ? "#fff" : "var(--text-secondary)",
+              fontWeight: 600, fontSize: 11, cursor: "pointer",
+              fontFamily: "'Inter', sans-serif", transition: "all 0.15s",
+              border: filterTag ? "1px solid var(--border)" : "none",
+            }}>
+              Semua Tag
+            </button>
+            {tagList.map(tag => (
+              <button key={tag.id} onClick={() => setFilterTag(tag.id)} style={{
+                display: "flex", alignItems: "center", gap: 3,
+                padding: "5px 12px", borderRadius: 16, border: "none",
+                background: filterTag === tag.id ? tag.color + "25" : "var(--surface)",
+                color: filterTag === tag.id ? tag.color : "var(--text-secondary)",
+                fontWeight: 600, fontSize: 11, cursor: "pointer",
+                fontFamily: "'Inter', sans-serif", transition: "all 0.15s",
+                border: filterTag !== tag.id ? "1px solid var(--border)" : "none",
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: tag.color }} />
+                {tag.name}
+              </button>
+            ))}
+          </div>
+        )}
         {searchQuery && (
           <button onClick={() => { setSearchQuery(""); setFilterType("all"); setFilterMetode("all"); }}
             style={{

@@ -26,7 +26,7 @@ function calcAggregate(data) {
 /* ═══════════════════════════════════════════
  *  HOME SCREEN
  * ═══════════════════════════════════════════ */
-const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user, onEditTx, onDeleteTx, budgetMap, kategoriList }) {
+const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user, onEditTx, onDeleteTx, budgetMap, kategoriList, tagList }) {
   const saldo = todayCalc.saldoCash ?? 0;
   const todayTransaksi = data[today]?.transaksi ?? [];
   const agg = useMemo(() => calcAggregate(data), [data]);
@@ -110,6 +110,12 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
   })();
 
   const displayName = getDisplayName(profile, user);
+
+  /* ─── Tag filter ─── */
+  const [filterTag, setFilterTag] = useState(null);
+  const filteredTodayTx = filterTag
+    ? todayTransaksi.filter(t => t.tag === filterTag)
+    : todayTransaksi;
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh", paddingBottom: 100 }}>
@@ -466,6 +472,21 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                   <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>
                     {t.catatan && t.catatan !== "-" ? t.catatan : (t.metode ? t.metode.toUpperCase() : "")}
                   </p>
+                  {t.tag && tagList && (() => {
+                    const tag = tagList.find(tg => tg.id === t.tag);
+                    return tag ? (
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 3,
+                        marginTop: 3, padding: "2px 8px", borderRadius: 8,
+                        fontSize: 9, fontWeight: 700,
+                        background: tag.color + "20",
+                        color: tag.color,
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: tag.color, flexShrink: 0 }} />
+                        {tag.name}
+                      </span>
+                    ) : null;
+                  })()}
                 </div>
                 <p style={{
                   margin: 0, fontSize: 14, fontWeight: 800,
