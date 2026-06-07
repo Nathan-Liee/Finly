@@ -4,7 +4,19 @@
 
 ## 🔴 Backlog (Siap Kerja)
 
-- (kosong)
+- [ ] Multi-akun/dompet — tambah dompet berbeda, pindah saldo antar dompet
+- [ ] Import CSV/Excel — upload file transaksi dari bank/ekspor lain
+- [ ] Analitik & forecast — tren pengeluaran, prediksi bulan depan
+- [ ] Catatan hutang-piutang — siapa hutang, jatuh tempo, reminder
+- [ ] Lampiran foto/bukti transaksi — upload via camera/gallery
+- [ ] Export laporan pajak — rekap tahunan siap SPT
+- [ ] Multiple bisnis/profile — switch profil usaha berbeda
+- [ ] Notifikasi reminder — pengingat transaksi berulang via browser
+- [ ] Budget rollover — sisa budget bulan lalu pindah ke bulan ini
+- [ ] Sharing laporan via WhatsApp image
+- [ ] Label/tag kustom — filter transaksi by tag
+- [ ] Goal/tabung — target nominal per periode
+- [ ] Rekap harian otomatis — kirim laporan tiap malam ke Telegram
 
 ## 🟡 In Progress
 
