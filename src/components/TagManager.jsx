@@ -90,7 +90,7 @@ export default function TagManager({ tagList, onUpdateTag, data }) {
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                     {TAG_COLORS.map(c => (
                       <button key={c} onClick={() => setEditColor(c)} style={{
-                        width: 22, height: 22, borderRadius: "50%", border: editColor === c ? "2px solid var(--text)" : "2px solid transparent",
+                        width: 28, height: 28, borderRadius: "50%", border: editColor === c ? "2px solid var(--text)" : "2px solid transparent",
                         background: c, cursor: "pointer", padding: 0, flexShrink: 0,
                       }} />
                     ))}
@@ -149,7 +149,7 @@ export default function TagManager({ tagList, onUpdateTag, data }) {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                 {TAG_COLORS.map(c => (
                   <button key={c} onClick={() => setNewColor(c)} style={{
-                    width: 24, height: 24, borderRadius: "50%",
+                    width: 28, height: 28, borderRadius: "50%",
                     border: newColor === c ? "3px solid var(--text)" : "2px solid transparent",
                     background: c, cursor: "pointer", padding: 0, flexShrink: 0,
                   }} />

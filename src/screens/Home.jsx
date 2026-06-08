@@ -79,7 +79,24 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
     return Object.keys(map).sort().slice(-8).map(m => ({ month: m, ...map[m] }));
   }, [data]);
 
-  /* ─── Kategori Breakdown Data ─── */
+  /* ─── KategoriBreakdownChart Component ─── */
+function KategoriBreakdownChart({ items }) {
+  if (!items || items.length === 0) return null;
+  const maxKat = Math.max(...items.map(k => k.jumlah), 1);
+  return items.map((k, i) => (
+    <div key={`${k.kategori}-${i}`}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>{k.kategori}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>{formatUang(k.jumlah)}</span>
+      </div>
+      <div style={{ height: 6, borderRadius: 3, background: "var(--border)", overflow: "hidden" }}>
+        <div style={{ width: ((k.jumlah / maxKat) * 100) + "%", height: "100%", background: "var(--accent)", borderRadius: 3 }} />
+      </div>
+    </div>
+  ));
+}
+
+/* ─── Kategori Breakdown Data ─── */
   const kategoriBreakdown = useMemo(() => {
     if (!data || typeof data !== 'object') return [];
     const map = {};
@@ -506,20 +523,7 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
               Kategori Breakdown (Top 5)
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {(() => {
-                const maxKat = Math.max(...kategoriBreakdown.map(k => k.jumlah), 1);
-                return kategoriBreakdown.map((k, i) => (
-                  <div key={`${k.kategori}-${i}`}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>{k.kategori}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>{formatUang(k.jumlah)}</span>
-                    </div>
-                    <div style={{ height: 6, borderRadius: 3, background: "var(--border)", overflow: "hidden" }}>
-                      <div style={{ width: ((k.jumlah / maxKat) * 100) + "%", height: "100%", background: "var(--accent)", borderRadius: 3 }} />
-                    </div>
-                  </div>
-                ));
-              })()}
+              <KategoriBreakdownChart items={kategoriBreakdown} />
             </div>
           </Card>
         </div>
@@ -653,6 +657,7 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                         width: 30, height: 30, borderRadius: 8, border: "none",
                         background: "var(--accent-subtle)", cursor: "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center",
+                        padding: 8, boxSizing: "content-box",
                       }}>
                         <Icon name="edit" size={13} color="var(--accent)" />
                       </button>
@@ -662,6 +667,7 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                         width: 30, height: 30, borderRadius: 8, border: "none",
                         background: "var(--danger-subtle)", cursor: "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center",
+                        padding: 8, boxSizing: "content-box",
                       }}>
                         <Icon name="trash" size={13} color="var(--danger)" />
                       </button>

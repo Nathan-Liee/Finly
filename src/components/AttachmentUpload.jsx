@@ -94,7 +94,7 @@ export default function AttachmentUpload({ value = [], onChange }) {
                   position: "absolute", top: 2, right: 2, width: 20, height: 20,
                   borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)",
                   cursor: "pointer", display: "flex", alignItems: "center",
-                  justifyContent: "center", padding: 0,
+                  justifyContent: "center", padding: 12, boxSizing: "content-box",
                 }}
                 aria-label="Hapus lampiran"
               >

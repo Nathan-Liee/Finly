@@ -24,6 +24,7 @@ function GoalCard({ goal, onEdit, onDelete, saldo }) {
             width: 28, height: 28, borderRadius: 8, border: "none",
             background: "var(--accent-subtle)", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 8, boxSizing: "content-box",
           }}>
             <Icon name="edit" size={12} color="var(--accent)" />
           </button>
@@ -31,6 +32,7 @@ function GoalCard({ goal, onEdit, onDelete, saldo }) {
             width: 28, height: 28, borderRadius: 8, border: "none",
             background: "var(--danger-subtle)", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 8, boxSizing: "content-box",
           }}>
             <Icon name="trash" size={12} color="var(--danger)" />
           </button>

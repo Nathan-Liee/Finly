@@ -14,8 +14,8 @@ function safeDate(tgl) {
 }
 
 /* ─── Enhanced Bar Chart ─── */
-function AnalyticsChart({ data, today }) {
-  const dates = Object.keys(data).sort().slice(-14);
+function AnalyticsChart({ data, today, days = 30 }) {
+  const dates = Object.keys(data).sort().slice(-days);
   if (dates.length === 0) return null;
 
   let maxVal = 0;
@@ -36,7 +36,7 @@ function AnalyticsChart({ data, today }) {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
-          Trend {dates.length > 7 ? "14" : "7"} Hari
+          Trend {days} Hari Terakhir
         </p>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -469,7 +469,7 @@ export default function LaporanScreen({
                     width: 28, height: 28, borderRadius: 8, border: "none",
                     background: "var(--accent-subtle)", cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0, marginLeft: 4,
+                    flexShrink: 0, marginLeft: 4, padding: 8, boxSizing: "content-box",
                   }}>
                     ✏️
                   </button>
@@ -477,7 +477,7 @@ export default function LaporanScreen({
                     width: 28, height: 28, borderRadius: 8, border: "none",
                     background: "var(--danger-subtle)", cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0,
+                    flexShrink: 0, padding: 8, boxSizing: "content-box",
                   }}>
                     🗑️
                   </button>

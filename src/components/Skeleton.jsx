@@ -1,21 +1,26 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
 
-/* ─── Pulse animation (injected once) ─── */
+/* ─── Pulse animation keyframes — injected once client-side ─── */
 const skeletonStyleId = "finly-skeleton-keyframes";
-if (typeof document !== "undefined" && !document.getElementById(skeletonStyleId)) {
-  const style = document.createElement("style");
-  style.id = skeletonStyleId;
-  style.textContent = `
-    @keyframes finly-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+function useInjectSkeletonStyles() {
+  useEffect(() => {
+    if (!document.getElementById(skeletonStyleId)) {
+      const style = document.createElement("style");
+      style.id = skeletonStyleId;
+      style.textContent = `
+        @keyframes finly-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `;
+      document.head.appendChild(style);
     }
-  `;
-  document.head.appendChild(style);
+  }, []);
 }
 
 /* ─── SkeletonLine ─── */
 export const SkeletonLine = memo(function SkeletonLine({ width = "100%", height = 14, style, rounded = true }) {
+  useInjectSkeletonStyles();
   return (
     <div
       style={{

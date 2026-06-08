@@ -145,10 +145,10 @@ function AddTagForm({ tagList, onUpdateTag }) {
             outline: "none",
           }}
         />
-        <div style={{ display: "flex", gap: 3 }}>
+        <div style={{ display: "flex", gap: 4 }}>
           {colores.map(c => (
             <button key={c} onClick={() => setColor(c)} style={{
-              width: 20, height: 20, borderRadius: "50%", border: color === c ? "2px solid var(--text)" : "1px solid var(--border)",
+              width: 28, height: 28, borderRadius: "50%", border: color === c ? "2px solid var(--text)" : "1px solid var(--border)",
               background: c, cursor: "pointer", flexShrink: 0,
             }} />
           ))}
@@ -580,7 +580,7 @@ export default function PengaturanScreen({
         ) : (
           <div style={{ padding: "0 20px" }}>
             {feedbackList.length === 0 ? (
-              <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 14, padding: "40px 0" }}>Tidak ada feedback.</p>
+              <div style={{ textAlign: "center", padding: 24, color: "var(--text-muted)", fontSize: 14 }}>Belum ada feedback.</div>
             ) : (
               feedbackList.map(item => {
                 const badge = statusBadge(item.status);
