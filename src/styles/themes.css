@@ -164,8 +164,8 @@
 
   /* Text */
   --color-text-primary: #F9FAFB;
-  --color-text-secondary: #9CA3AF;
-  --color-text-muted: #6B7280;
+  --color-text-secondary: #A3AFC0;
+  --color-text-muted: #7E8A9E;
   --color-text-inverse: #111827;
 
   /* Accent */
@@ -241,8 +241,8 @@
     --color-border: #232736;
     --color-border-subtle: #1A1E2A;
     --color-text-primary: #F9FAFB;
-    --color-text-secondary: #9CA3AF;
-    --color-text-muted: #6B7280;
+    --color-text-secondary: #A3AFC0;
+    --color-text-muted: #7E8A9E;
     --color-text-inverse: #111827;
     --color-accent-hover: #8090FF;
     --color-accent-subtle: rgba(107, 126, 255, 0.12);
@@ -266,4 +266,34 @@
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3), 0 4px 6px rgba(0, 0, 0, 0.2);
     --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.3), 0 8px 10px rgba(0, 0, 0, 0.2);
   }
+}
+
+/* ── Smooth theme switching ─────────────── */
+:root {
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ── Thin scrollbar (webkit) ────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border, #E5E7EB);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted, #9CA3AF);
+}
+
+/* Firefox thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border, #E5E7EB) transparent;
 }

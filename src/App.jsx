@@ -9,6 +9,7 @@ import Icon  from "./components/Icon";
 import Toast from "./components/Toast";
 import RecurringForm from "./components/RecurringForm";
 import TagSelector from "./components/TagSelector";
+import AttachmentUpload from "./components/AttachmentUpload";
 
 const HomeScreen = lazy(() => import("./screens/Home"));
 const LaporanScreen = lazy(() => import("./screens/Laporan"));
@@ -53,6 +54,9 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [importPreview, setImportPreview] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem("finly-sidebar-collapsed") === "true"; } catch { return false; }
+  });
 
   /* ─── Reminder Preferences ─── */
   const [reminderPrefs, setReminderPrefs] = useState(() => {
@@ -79,6 +83,7 @@ export default function App() {
   const [formEditCatatan, setFormEditCatatan] = useState("");
   const [formTag, setFormTag] = useState(null);
   const [formEditTag, setFormEditTag] = useState(null);
+  const [formAttachments, setFormAttachments] = useState([]);
   const [resetStart,   setResetStart]   = useState("");
   const [resetEnd,     setResetEnd]     = useState("");
   const [resetUangAwal,setResetUangAwal]= useState(false);
@@ -98,6 +103,19 @@ export default function App() {
       return stored ? JSON.parse(stored) : [];
     } catch { return []; }
   });
+
+  /* ─── Goals / Tabung ─── */
+  const [goals, setGoals] = useState(() => {
+    try {
+      const stored = localStorage.getItem("finly-goals");
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
+  const updateGoals = useCallback((newGoals) => {
+    setGoals(newGoals);
+    try { localStorage.setItem("finly-goals", JSON.stringify(newGoals)); } catch {}
+  }, []);
 
   /* ─── Budget bulanan ─── */
   const [budgetMap, setBudgetMap] = useState(() => {
@@ -504,6 +522,19 @@ export default function App() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2200);
   };
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem("finly-sidebar-collapsed", next ? "true" : "false"); } catch {}
+      return next;
+    });
+  };
+
+  /* Sync sidebar collapsed class to :root for CSS selectors */
+  useEffect(() => {
+    document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed);
+  }, [sidebarCollapsed]);
+
   const closeModal = () => {
     setModal(null);
     setFormJumlah(""); setFormKategori(""); setFormCatatan(""); setFormMetode("cash");
@@ -511,6 +542,7 @@ export default function App() {
     setEditIdx(null); setFormEditJumlah(""); setFormEditMetode("cash");
     setFormEditKategori(""); setFormEditCatatan("");
     setFormTag(null); setFormEditTag(null);
+    setFormAttachments([]);
     setResetStart(""); setResetEnd(""); setResetUangAwal(false);
     setImportPreview(null);
   };
@@ -561,7 +593,7 @@ export default function App() {
     try {
       // Compute new transaction array ONCE to avoid stale closure issues
       const prevTx = data[today]?.transaksi ?? [];
-      const newTx = { type: "masuk", jumlah: n, metode: formMetode, tag: formTag };
+      const newTx = { type: "masuk", jumlah: n, metode: formMetode, tag: formTag, attachments: formAttachments };
       const updatedTx = [...prevTx, newTx];
 
       setData(prev => {
@@ -588,7 +620,7 @@ export default function App() {
     try {
       // Compute new transaction array ONCE to avoid stale closure issues
       const prevTx = data[today]?.transaksi ?? [];
-      const newTx = { type: "keluar", jumlah: n, kategori: formKategori || "Lainnya", catatan: formCatatan || "-", tag: formTag };
+      const newTx = { type: "keluar", jumlah: n, kategori: formKategori || "Lainnya", catatan: formCatatan || "-", tag: formTag, attachments: formAttachments };
       const updatedTx = [...prevTx, newTx];
 
       setData(prev => {
@@ -1010,8 +1042,12 @@ export default function App() {
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
         body { margin: 0; background: var(--bg); }
         input::placeholder { color: var(--text-muted); }
-        ::-webkit-scrollbar { width: 0; }
-        :root { --cw: min(100vw, 480px); --sidebar-width: 240px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+        :root { --cw: min(100vw, 480px); --sidebar-width: 240px; --sidebar-collapsed-width: 64px; }
         @media (min-width: 768px) { :root { --cw: min(100vw, 640px); } }
         @media (min-width: 1024px) { :root { --cw: min(100vw, 800px); } }
         .app-container {
@@ -1038,49 +1074,98 @@ export default function App() {
         .app-sidebar {
           display: none;
           position: fixed; top: 0; left: 0;
-          width: var(--sidebar-width); height: 100vh;
+          width: var(--sidebar-width);
+          height: 100vh;
           background: var(--surface);
           border-right: 1px solid var(--border);
           z-index: 200; flex-direction: column;
           overflow-y: auto;
+          transition: width 0.2s ease;
+        }
+        .app-sidebar.collapsed {
+          width: var(--sidebar-collapsed-width);
         }
         .app-sidebar-nav {
-          padding: 12px; display: flex; flex-direction: column; gap: 2px;
+          padding: 8px; display: flex; flex-direction: column; gap: 2px;
         }
         .app-sidebar-nav button {
           width: 100%; display: flex; align-items: center; gap: 12px;
-          padding: 11px 14px; border: none; border-radius: 10px;
+          padding: 11px 10px; border: none; border-radius: 10px;
           cursor: pointer; font-size: 14px; font-weight: 600;
           font-family: 'Inter', sans-serif; text-align: left; transition: all 0.15s;
+          white-space: nowrap; overflow: hidden;
         }
         .app-sidebar-nav button:hover {
           background: var(--accent-subtle);
         }
+        .app-sidebar.collapsed .app-sidebar-nav button {
+          justify-content: center; padding: 11px 0;
+        }
+        .app-sidebar.collapsed .app-sidebar-nav button span {
+          display: none;
+        }
         .app-sidebar-footer {
-          margin-top: auto; padding: 12px 12px 20px;
+          margin-top: auto; padding: 8px; display: flex; flex-direction: column; gap: 2px;
           border-top: 1px solid var(--border);
+        }
+        .app-sidebar.collapsed .app-sidebar-footer button span {
+          display: none;
+        }
+        .app-sidebar.collapsed .app-sidebar-footer button {
+          justify-content: center; padding: 11px 0;
+        }
+        .app-sidebar-toggle {
+          position: absolute; top: 50%; right: -14px;
+          width: 28px; height: 28px; border-radius: 50%;
+          background: var(--surface); border: 1px solid var(--border);
+          cursor: pointer; display: flex; align-items: center; justify-content: center;
+          z-index: 5; color: var(--text-secondary); font-size: 12px; padding: 0; line-height: 1;
+          transition: transform 0.2s ease, background 0.15s; box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+          transform: translateY(-50%);
+        }
+        .app-sidebar-toggle:hover {
+          background: var(--accent-subtle); color: var(--accent);
+        }
+        .app-sidebar.collapsed .app-sidebar-toggle {
+          transform: translateY(-50%) rotate(180deg);
         }
         @media (min-width: 768px) {
           .app-sidebar { display: flex; }
           .app-nav { display: none; }
           .app-container {
             margin-left: var(--sidebar-width); margin-right: auto; max-width: var(--cw);
+            transition: margin-left 0.2s ease;
+          }
+          .sidebar-collapsed .app-container {
+            margin-left: var(--sidebar-collapsed-width);
           }
           .app-fab {
             bottom: 24px;
             right: calc(100vw - var(--sidebar-width) - var(--cw) + 20px);
+            transition: right 0.2s ease;
+          }
+          .sidebar-collapsed .app-fab {
+            right: calc(100vw - var(--sidebar-collapsed-width) - var(--cw) + 20px);
           }
           .app-offline-banner {
             left: calc(50% + var(--sidebar-width) / 2);
             max-width: calc(100vw - var(--sidebar-width));
+            transition: left 0.2s ease, max-width 0.2s ease;
+          }
+          .sidebar-collapsed .app-offline-banner {
+            left: calc(50% + var(--sidebar-collapsed-width) / 2);
+            max-width: calc(100vw - var(--sidebar-collapsed-width));
           }
         }
       `}</style>
 
       {/* ─── Sidebar ─── */}
-      <div className="app-sidebar">
+      <div className={`app-sidebar${sidebarCollapsed ? ' collapsed' : ''}`} style={{ position: 'relative' }}>
+        <button onClick={toggleSidebar} className="app-sidebar-toggle" aria-label={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}>
+          ◀
+        </button>
         <div style={{
-          padding: "20px 16px 16px",
+          padding: sidebarCollapsed ? "16px 8px" : "20px 16px 16px",
           display: "flex", alignItems: "center", gap: 10,
           borderBottom: "1px solid var(--border)",
         }}>
@@ -1092,9 +1177,11 @@ export default function App() {
           }}>
             F
           </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", letterSpacing: -0.5 }}>
-            Finly
-          </span>
+          {!sidebarCollapsed && (
+            <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", letterSpacing: -0.5 }}>
+              Finly
+            </span>
+          )}
         </div>
         <div className="app-sidebar-nav">
           {TABS.map((t) => (
@@ -1170,6 +1257,7 @@ export default function App() {
               budgetMap={budgetMap}
               kategoriList={kategoriList}
               tagList={tagList}
+              goals={goals}
             />
           </div>
         )}
@@ -1200,6 +1288,7 @@ export default function App() {
               onOpenImport={handleOpenImport} installPrompt={installPrompt}
               reminderPrefs={reminderPrefs} onUpdateReminder={updateReminderPrefs}
               tagList={tagList} onUpdateTag={updateTagList}
+              goals={goals} onUpdateGoals={updateGoals}
             />
           </div>
         )}
@@ -1275,6 +1364,7 @@ export default function App() {
             ))}
           </div>
           <TagSelector tagList={tagList} value={formTag} onChange={setFormTag} />
+          <AttachmentUpload value={formAttachments} onChange={setFormAttachments} />
           <Btn onClick={doMasuk} variant="success" icon="plus" disabled={isSubmitting} fullWidth>Tambah Pemasukan</Btn>
         </Modal>
 
@@ -1294,6 +1384,7 @@ export default function App() {
           </select>
           <Field label="Catatan" value={formCatatan} onChange={setFormCatatan} placeholder="Opsional" onKeyDown={(e) => { if (e.key === "Enter" && !isSubmitting) doKeluar(); }} />
           <TagSelector tagList={tagList} value={formTag} onChange={setFormTag} />
+          <AttachmentUpload value={formAttachments} onChange={setFormAttachments} />
           <Btn onClick={doKeluar} variant="danger" icon="minus" disabled={isSubmitting || !formKategori} fullWidth>Tambah Pengeluaran</Btn>
         </Modal>
 

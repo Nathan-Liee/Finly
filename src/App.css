@@ -3,30 +3,48 @@ html, body, #root {
   margin: 0;
   padding: 0;
   background: var(--bg);
+  transition: background 0.3s ease;
 }
 
 body {
   color: var(--text);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: color 0.3s ease, background 0.3s ease;
 }
 
 * {
   box-sizing: border-box;
 }
 
+/* ─── Smooth theme transitions for common elements ─── */
+*,
+*::before,
+*::after {
+  transition-property: background, background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Exclude elements where transitions would cause issues */
+input, select, textarea, button, a {
+  transition-property: background, background-color, border-color, color, box-shadow, transform, opacity;
+}
+
 /* ─── Page Transitions ─── */
 .page-transition {
-  animation: pageIn 0.25s var(--ease-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+  animation: pageIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes pageIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
+    filter: blur(2px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+    filter: blur(0);
   }
 }
 

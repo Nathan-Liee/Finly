@@ -23,7 +23,7 @@
 
 | | |
 |---|---|
-| **Version** | v1.15.0 |
+| **Version** | v1.16.0 |
 | **Live** | [finly-mauve.vercel.app](https://finly-mauve.vercel.app) |
 | **Build** | ![Build](https://img.shields.io/badge/build-passing-brightgreen) |
 | **License** | ![License](https://img.shields.io/badge/license-MIT-blue) |
@@ -82,7 +82,13 @@ npm run dev
 ## 📋 Changelog
 
 > Changelog otomatis diperbarui setiap hari oleh AI agent.
-### 2026-06-08 (v1.15.0)
+### 2026-06-08 (v1.16.0)
+- ⏳ Loading skeleton — animated pulse placeholders di Home saat load
+- 📸 Lampiran foto/bukti transaksi — upload via camera/gallery, compress ke base64
+- 🎯 Goal/tabung — target nominal per periode (bulanan/tahunan/kustom) dengan progress bar
+- 💫 Dark mode polish — smooth CSS transitions, improved contrast
+- 🖥️ Sidebar collapsible — toggle tombol di desktop, mode 64px collapsed
+- 🎨 Scrollbar styling — thin, themed scrollbar di seluruh app
 - 🏷️ Label/tag kustom — buat tag, filter transaksi by tag di Home & Laporan
 - ⏪ Budget rollover — sisa budget bulan lalu pindah ke bulan ini (toggle per kategori)
 - 🔔 Notifikasi reminder — browser notification untuk recurring transactions (atur jam)
@@ -122,5 +128,5 @@ npm run dev
 ---
 
 <p align="center">
-  Dibuat dengan ❤️ | Finly v1.15.0
+  Dibuat dengan ❤️ | Finly v1.16.0
 </p>

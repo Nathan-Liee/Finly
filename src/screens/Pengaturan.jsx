@@ -7,6 +7,7 @@ import { insertFeedback, getFeedbackList, updateFeedbackStatus } from "../utils/
 import { toggleTheme } from "../theme";
 import KategoriManager from "../components/KategoriManager";
 import BudgetManager from "../components/BudgetManager";
+import GoalManager from "../components/GoalManager";
 
 /* ═══════════════════════════════════════════
  *  PENGATURAN SCREEN — NEW LAYOUT
@@ -176,6 +177,7 @@ export default function PengaturanScreen({
   onOpenImport, installPrompt,
   reminderPrefs, onUpdateReminder,
   tagList, onUpdateTag,
+  goals, onUpdateGoals,
 }) {
   /* ─── Profile editing ─── */
   const [editMode, setEditMode] = useState(null); // "username" | "password" | null
@@ -210,6 +212,9 @@ export default function PengaturanScreen({
   const [isDark, setIsDark] = useState(() => {
     try { return localStorage.getItem("kasapp-theme") === "dark"; } catch { return false; }
   });
+
+  /* ─── Goal Manager modal ─── */
+  const [showGoalModal, setShowGoalModal] = useState(false);
 
   useEffect(() => {
     // TODO: Ganti hardcoded email ini dengan env variable atau admin check dari backend
@@ -1034,6 +1039,40 @@ export default function PengaturanScreen({
         kategoriList={kategoriList}
         data={data}
       />
+
+      {/* ═══════════════════════════════════════ */}
+      {/*  GOAL / TABUNG                          */}
+      {/* ═══════════════════════════════════════ */}
+      <SectionHeader title="Tabung" />
+      <SettingsCard>
+        <SettingRow
+          icon="dollarSign" iconColor="var(--accent)"
+          title="Goal / Tabung"
+          subtitle={`${goals.length} goal${goals.length !== 1 ? 's' : ''} • ${goals.filter(g => {
+            const saldo = Object.keys(data).reduce((sum, tgl) => {
+              const tx = data[tgl]?.transaksi ?? [];
+              const masuk = tx.filter(t => t.type === "masuk").reduce((s, t) => s + (t.jumlah ?? 0), 0);
+              const keluar = tx.filter(t => t.type === "keluar").reduce((s, t) => s + (t.jumlah ?? 0), 0);
+              return sum + masuk - keluar;
+            }, 0);
+            return saldo >= (g.target || 0);
+          }).length} tercapai`}
+          action={() => setShowGoalModal(true)}
+        />
+      </SettingsCard>
+
+      <Modal show={showGoalModal} onClose={() => setShowGoalModal(false)} title="Goal / Tabung">
+        <GoalManager
+          goals={goals}
+          onUpdateGoals={onUpdateGoals}
+          saldo={Object.keys(data).reduce((sum, tgl) => {
+            const tx = data[tgl]?.transaksi ?? [];
+            const masuk = tx.filter(t => t.type === "masuk").reduce((s, t) => s + (t.jumlah ?? 0), 0);
+            const keluar = tx.filter(t => t.type === "keluar").reduce((s, t) => s + (t.jumlah ?? 0), 0);
+            return sum + masuk - keluar;
+          }, 0)}
+        />
+      </Modal>
 
       {/* ═══════════════════════════════════════ */}
       {/*  TRANSAKSI BERULANG                      */}

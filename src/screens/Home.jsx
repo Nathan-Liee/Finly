@@ -1,8 +1,14 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 import Card from "../components/Card";
 import Icon from "../components/Icon";
 import { formatUang } from "../utils/format";
 import { getDisplayName } from "../utils/storage";
+import {
+  SkeletonBalanceCard,
+  SkeletonStats,
+  SkeletonBlock,
+  SkeletonTransaksi,
+} from "../components/Skeleton";
 
 /* ─── Aggregate Analytics ─── */
 function calcAggregate(data) {
@@ -26,10 +32,18 @@ function calcAggregate(data) {
 /* ═══════════════════════════════════════════
  *  HOME SCREEN
  * ═══════════════════════════════════════════ */
-const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user, onEditTx, onDeleteTx, budgetMap, kategoriList, tagList }) {
+const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, setTab, profile, user, onEditTx, onDeleteTx, budgetMap, kategoriList, tagList, goals }) {
   const saldo = todayCalc.saldoCash ?? 0;
   const todayTransaksi = data[today]?.transaksi ?? [];
   const agg = useMemo(() => calcAggregate(data), [data]);
+
+  /* ─── Loading skeleton state ─── */
+  const [pageLoading, setPageLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setPageLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   /* ─── Budget bulan ini ─── */
   const currentMonth = today.substring(0, 7);
@@ -113,11 +127,40 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
 
   /* ─── Tag filter ─── */
   const [filterTag, setFilterTag] = useState(null);
+  const [viewerAttachments, setViewerAttachments] = useState(null);
+  const [viewerIdx, setViewerIdx] = useState(0);
   const filteredTodayTx = filterTag
     ? todayTransaksi.filter(t => t.tag === filterTag)
     : todayTransaksi;
 
-  return (
+  return pageLoading ? (
+    <div style={{ background: "var(--bg)", minHeight: "100vh", paddingBottom: 100 }}>
+      <div style={{ padding: "0 20px" }}>
+        {/* Skeleton Header */}
+        <div style={{ padding: "44px 0 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <SkeletonBlock width={80} height={13} rounded={6} />
+            <SkeletonBlock width={160} height={24} rounded={8} />
+          </div>
+          <SkeletonBlock width={44} height={44} rounded={14} />
+        </div>
+        {/* Skeleton Balance */}
+        <SkeletonBalanceCard />
+        <div style={{ marginTop: 16 }}>
+          <SkeletonStats />
+        </div>
+        <div style={{ marginTop: 20 }}>
+          <SkeletonBlock height={80} rounded={16} />
+        </div>
+        <div style={{ marginTop: 24 }}>
+          <p style={{ color: "var(--text)", fontSize: 16, fontWeight: 800, margin: "0 0 12px" }}>
+            Transaksi Hari Ini
+          </p>
+          <SkeletonTransaksi />
+        </div>
+      </div>
+    </div>
+  ) : (
     <div style={{ background: "var(--bg)", minHeight: "100vh", paddingBottom: 100 }}>
       {/* ─── Header ─── */}
       <div style={{ padding: "44px 20px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -258,6 +301,75 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Goal / Tabung Progress ─── */}
+      {goals && goals.length > 0 && agg.saldoBersih >= 0 && (
+        <div style={{ padding: "0 20px 16px" }}>
+          <div style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 16, padding: "14px 16px",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>
+                🎯 Goal / Tabung
+              </span>
+              <button onClick={() => setTab("pengaturan")} style={{
+                background: "none", border: "none", color: "var(--accent)",
+                fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              }}>
+                Kelola →
+              </button>
+            </div>
+            {(() => {
+              const sorted = [...goals].sort((a, b) => {
+                const pctA = (agg.saldoBersih / (a.target || 1)) * 100;
+                const pctB = (agg.saldoBersih / (b.target || 1)) * 100;
+                return pctB - pctA;
+              });
+              const top3 = sorted.slice(0, 3);
+              const rest = sorted.length - 3;
+              return (
+                <>
+                  {top3.map(g => {
+                    const pct = g.target > 0 ? Math.min((agg.saldoBersih / g.target) * 100, 100) : 0;
+                    const achieved = agg.saldoBersih >= (g.target || 0);
+                    return (
+                      <div key={g.id} style={{ marginBottom: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text)" }}>{g.name}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: achieved ? "var(--success)" : "var(--accent)" }}>
+                            {pct.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: "var(--border)", overflow: "hidden" }}>
+                          <div style={{
+                            height: "100%", width: `${pct}%`, borderRadius: 3,
+                            background: achieved ? "var(--success)" : pct > 80 ? "var(--warning)" : "var(--accent)",
+                            transition: "width 0.3s",
+                          }} />
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "var(--text-muted)", marginTop: 2 }}>
+                          <span>{formatUang(Math.min(agg.saldoBersih, g.target))} / {formatUang(g.target)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {rest > 0 && (
+                    <div style={{
+                      textAlign: "center", marginTop: 8, paddingTop: 8,
+                      borderTop: "1px solid var(--border)",
+                    }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>
+                        +{rest} goal{rest > 1 ? 's' : ''} lagi
+                      </span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -487,6 +599,40 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                       </span>
                     ) : null;
                   })()}
+                  {/* ─── Attachment thumbnails ─── */}
+                  {t.attachments && t.attachments.length > 0 && (
+                    <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
+                      {t.attachments.slice(0, 3).map((att, attIdx) => (
+                        <button
+                          key={attIdx}
+                          onClick={(e) => { e.stopPropagation(); setViewerAttachments(t.attachments); setViewerIdx(attIdx); }}
+                          style={{
+                            width: 28, height: 28, borderRadius: 6, overflow: "hidden",
+                            border: "1px solid var(--border)", padding: 0, cursor: "pointer",
+                            background: "none", flexShrink: 0,
+                          }}
+                          aria-label={`Lihat lampiran ${attIdx + 1}`}
+                        >
+                          <img
+                            src={att}
+                            alt={`Lampiran ${attIdx + 1}`}
+                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                          />
+                        </button>
+                      ))}
+                      {t.attachments.length > 1 && (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 2,
+                          fontSize: 9, color: "var(--text-muted)", fontWeight: 600,
+                        }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                          </svg>
+                          {t.attachments.length}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <p style={{
                   margin: 0, fontSize: 14, fontWeight: 800,
@@ -523,6 +669,78 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
           </div>
         )}
       </div>
+
+      {/* ─── Attachment Viewer Modal ─── */}
+      {viewerAttachments && (
+        <div
+          onClick={() => setViewerAttachments(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 3000,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexDirection: "column", gap: 12,
+          }}
+        >
+          <div style={{ position: "relative", maxWidth: "90vw", maxHeight: "80vh" }}>
+            <img
+              src={viewerAttachments[viewerIdx]}
+              alt={`Lampiran ${viewerIdx + 1}`}
+              style={{
+                maxWidth: "100%", maxHeight: "80vh", borderRadius: 12,
+                objectFit: "contain", display: "block",
+              }}
+            />
+            {/* Nav buttons */}
+            {viewerAttachments.length > 1 && (
+              <div style={{ position: "absolute", top: "50%", left: 0, right: 0, display: "flex", justifyContent: "space-between", transform: "translateY(-50%)", pointerEvents: "none", padding: "0 8px" }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setViewerIdx(v => Math.max(0, v - 1)); }}
+                  style={{
+                    pointerEvents: "auto", width: 36, height: 36, borderRadius: "50%",
+                    border: "none", background: "rgba(0,0,0,0.5)", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    opacity: viewerIdx === 0 ? 0.3 : 1,
+                  }}
+                  disabled={viewerIdx === 0}
+                  aria-label="Sebelumnya"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setViewerIdx(v => Math.min(viewerAttachments.length - 1, v + 1)); }}
+                  style={{
+                    pointerEvents: "auto", width: 36, height: 36, borderRadius: "50%",
+                    border: "none", background: "rgba(0,0,0,0.5)", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    opacity: viewerIdx === viewerAttachments.length - 1 ? 0.3 : 1,
+                  }}
+                  disabled={viewerIdx === viewerAttachments.length - 1}
+                  aria-label="Selanjutnya"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+          <div style={{ color: "#fff", fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
+            {viewerIdx + 1} / {viewerAttachments.length}
+          </div>
+          <button
+            onClick={() => setViewerAttachments(null)}
+            style={{
+              background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 10,
+              padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 600,
+              cursor: "pointer", fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            Tutup
+          </button>
+        </div>
+      )}
     </div>
   );
 });
