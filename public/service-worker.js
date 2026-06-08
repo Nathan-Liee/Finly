@@ -1,15 +1,14 @@
-/* ─── Finly Service Worker v3 ───
- * Cache-first for Vite static assets (hash-fingerprinted).
+/* ─── Finly Service Worker v4 ───
+ * Network-first for navigation (fresh index.html each deploy).
+ * Cache-first for Vite hash-fingerprinted assets (immutable).
  * Network-first for Supabase API calls.
- * Cache-first for navigation (SPA shell).
+ * Offline fallback from cache for all.
  */
-const CACHE_NAME = 'finly-v3';
-const STATIC_CACHE = 'finly-static-v3';
-const API_CACHE = 'finly-api-v3';
+const CACHE_NAME = 'finly-v4';
+const STATIC_CACHE = 'finly-static-v4';
+const API_CACHE = 'finly-api-v4';
 
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
   '/favicon.svg',
   '/logo.svg',
   '/app-icon.svg',
@@ -17,7 +16,7 @@ const PRECACHE_URLS = [
   '/manifest.json',
 ];
 
-/* ─── Install: precache shell ─── */
+/* ─── Install: precache small shell assets ─── */
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
@@ -64,17 +63,16 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Vite-built static assets: cache-first
+  // Vite-built static assets (hash-fingerprinted = immutable): cache-first
   if (isStaticAsset(request.url)) {
     e.respondWith(cacheFirst(request, STATIC_CACHE));
     return;
   }
 
-  // Navigation: serve cached shell, fallback network
+  // Navigation: network-first — get fresh index.html from each deploy;
+  // fall back to cached shell when offline
   if (isNavigation(request)) {
-    e.respondWith(
-      caches.match('/index.html').then((cached) => cached || fetch(request))
-    );
+    e.respondWith(networkFirst(request, CACHE_NAME));
     return;
   }
 
