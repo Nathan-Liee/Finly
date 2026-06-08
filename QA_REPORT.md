@@ -1,8 +1,8 @@
 # 🔍 QA AUDIT REPORT — Finly v1.16.0
 
-**Date:** 2026-06-08  
+**Date:** 2026-06-08  **Updated:** 2026-06-08 (performance audit batch) 
 **Scope:** Full code audit: security, bugs, performance, UX, accessibility, PWA  
-**Build:** ✅ `npm run build` passes (7.82s, ~1.5MB gzip total, 129KB main chunk)
+**Build:** ✅ `npm run build` passes (2.51s, main chunk 72KB/18.9KB gzip)
 
 ---
 
@@ -41,6 +41,84 @@
 - **Saran:** Rebuild APK di machine lokal: `cd finly && npm run build && npx cap sync android && cd android && ./gradlew assembleDebug`
 
 ---
+
+## ⚡ PERFORMANCE FIXES (2026-06-08)
+
+### [FIXED] Service Worker never registered (BROKEN PWA)
+- **Lokasi:** `index.html`
+- **Masalah:** `service-worker.js` punya 115 lines cache strategy tapi TIDAK PERNAH didaftarkan. Offline caching, PWA install, semua fitur PWA mati total.
+- **Fix:** Tambah `navigator.serviceWorker.register('/service-worker.js')` di `<script>` sebelum `</body>`
+- **Impact:** ✅ PWA beneran jalan — offline cache, install prompt
+
+### [FIXED] Main chunk 464KB — 4x lebih besar dari perlu
+- **Lokasi:** `vite.config.js` (manualChunks)
+- **Masalah:** React 19 + ReactDOM + Supabase + semua komponen + 1723-line App.jsx di satu file
+- **Fix:** Split vendor chunks — React vendor (189KB), Supabase vendor (183KB) terpisah
+- **Impact:** ✅ Main chunk **464KB → 72KB (85% lebih kecil)**
+
+### [FIXED] Login screen eager-loaded (~25KB)
+- **Lokasi:** `src/App.jsx:3`
+- **Masalah:** `import LoginScreen from "./screens/Login"` — Login code dikirim ke semua user bahkan setelah login
+- **Fix:** `const LoginScreen = lazy(() => import("./screens/Login"))` + Suspense wrapper
+- **Impact:** ✅ Login jadi chunk terpisah 5.66KB — cuma load pas logout
+
+### [FIXED] Supabase queries tanpa .limit() — data bisa ilang
+- **Lokasi:** `src/utils/storage.js`, `src/utils/supabase-feedback.js`
+- **Masalah:** `@supabase/supabase-js` default `.limit(1000)`. User dengan >1000 transaksi kehilangan data.
+- **Fix:** `.limit(100000)` di transaksi, `.limit(3650)` di uang_awal, `.limit(500)` di feedback
+- **Impact:** ✅ Semua data ke-fetch, gak ada silent truncate
+
+### [FIXED] Dead assets 57KB tidak dipakai
+- **Lokasi:** `src/assets/hero.png` (44KB), `src/assets/react.svg` (4KB), `src/assets/vite.svg` (8.5KB)
+- **Masalah:** 3 file assets tidak pernah di-import, cuma numpuk
+- **Fix:** Hapus dari repo
+- **Impact:** ✅ Build scanning lebih cepat, repo lebih bersih
+
+---
+
+### New build stats (after perf fixes)
+
+| Chunk | Size | Gzip | Status |
+|-------|------|------|--------|
+| `index-Bd9LUbax.js` (main) | 72.54 KB | 18.99 KB | ✅ Main chunk |
+| `vendor-react-DQjh68qT.js` | 189.63 KB | 59.64 KB | ✅ Vendor (cached) |
+| `vendor-supabase-h-CoNa0-.js` | 183.85 KB | 47.74 KB | ✅ Vendor (cached) |
+| `Pengaturan-DZbm9IEZ.js` | 48.75 KB | 9.64 KB | ✅ Lazy |
+| `Laporan-CegCgEUP.js` | 27.14 KB | 5.88 KB | ✅ Lazy |
+| `Home-DVqbznD4.js` | 26.69 KB | 5.74 KB | ✅ Lazy |
+| `Login-Bm0D9KdN.js` | 5.66 KB | 2.06 KB | ✅ Lazy (baru) |
+| `xlsx-CAaI4pPd.js` | 424.78 KB | 141.50 KB | ✅ Lazy (hanya pas export) |
+| `jspdf.es.min-CwUEc1pM.js` | 399.30 KB | 129.54 KB | ✅ Lazy |
+| `html2canvas-uxyJzpjj.js` | 199.58 KB | 46.79 KB | ✅ Lazy |
+| `index-DHev-kb4.css` | 8.33 KB | 1.94 KB | ✅ External CSS |
+
+---
+
+## 🚧 REMAINING AFTER PERF AUDIT
+
+### HIGH
+- `alert()` di Laporan.jsx — blocking dialog untuk error PDF/Excel. Ganti pake toast.
+- Recurring transactions race condition — `useEffect` depends on `[data, recurringRules]`, `setData` di dalamnya trigger re-run.
+- Timezone bug — `new Date(tgl + "T00:00:00")` di 8 tempat (cuma ngaruh UTC negatif)
+
+### MEDIUM
+- Toast tidak queue — overlapping kalo 2 toast dalam 2.2 detik
+- Inline `<style>` di App.jsx (4KB, gak cacheable)
+- 8 komponen eager-imported (RecurringForm, TagSelector, AttachmentUpload) — bisa lazy
+- Edit transaksi stale closure
+- Duplicate CSV export logic
+- Google Fonts render-blocking
+
+### LOW
+- Keyboard shortcut gak konsisten
+- No focus trapping di modal
+- No aria-label di icon buttons
+- Login username enumerasi
+- text-muted contrast ratio
+- Duplicate CSS (App.css vs index.css)
+- validation.js utilities gak dipake
+- editTx.js gak dipake
+- No OG tags
 
 ## 🚨 CRITICAL — Remaining
 
