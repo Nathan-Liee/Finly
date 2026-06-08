@@ -20,7 +20,7 @@ export async function insertFeedback({ kategori, judul, pesan, email }) {
 }
 
 export async function getFeedbackList(statusFilter = "Semua") {
-  let query = supabase.from('feedback').select('*').order('created_at', { ascending: false });
+  let query = supabase.from('feedback').select('*').order('created_at', { ascending: false }).limit(500);
 
   if (statusFilter !== "Semua") {
     query = query.eq('status', statusFilter.toLowerCase());

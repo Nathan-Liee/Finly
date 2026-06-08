@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from "react";
 import { supabase } from "./utils/supabase";
-import LoginScreen from "./screens/Login";
+const LoginScreen = lazy(() => import("./screens/Login"));
 
 import Modal  from "./components/Modal";
 import Btn   from "./components/Button";
@@ -925,7 +925,8 @@ export default function App() {
 
   /* ─── Login screen ─── */
   if (!user) return (
-    <LoginScreen onLogin={async () => {
+    <Suspense fallback={<div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Memuat...</div>}>
+      <LoginScreen onLogin={async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
@@ -944,7 +945,8 @@ export default function App() {
           } catch { setData({}); setModal("setup"); }
         }
       } catch (err) { showToast("Login gagal: " + (err.message || "Unknown"), "error"); }
-    }} />
+      }} />
+    </Suspense>
   );
 
   /* ─── Main app ─── */

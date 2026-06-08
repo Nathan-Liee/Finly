@@ -37,13 +37,15 @@ export async function loadData() {
       const { data: kasHarianDb, error: errKas } = await supabase
         .from('uang_awal')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .limit(3650); // ~10 tahun data
 
       const { data: transaksiDb, error: errTrans } = await supabase
         .from('transaksi')
         .select('*')
         .eq('user_id', user.id)
-        .order('urutan', { ascending: true });
+        .order('urutan', { ascending: true })
+        .limit(100000); // ~10rb transaksi/hari x 10 tahun
 
       if (!errKas && !errTrans) {
         // Supabase sukses — gunakan sebagai authoritative source
