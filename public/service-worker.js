@@ -1,11 +1,11 @@
-/* ─── Finly Service Worker v2 ───
+/* ─── Finly Service Worker v3 ───
  * Cache-first for Vite static assets (hash-fingerprinted).
  * Network-first for Supabase API calls.
  * Cache-first for navigation (SPA shell).
  */
-const CACHE_NAME = 'finly-v2';
-const STATIC_CACHE = 'finly-static-v2';
-const API_CACHE = 'finly-api-v2';
+const CACHE_NAME = 'finly-v3';
+const STATIC_CACHE = 'finly-static-v3';
+const API_CACHE = 'finly-api-v3';
 
 const PRECACHE_URLS = [
   '/',
