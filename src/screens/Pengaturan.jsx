@@ -8,6 +8,7 @@ import { toggleTheme } from "../theme";
 import KategoriManager from "../components/KategoriManager";
 import BudgetManager from "../components/BudgetManager";
 import GoalManager from "../components/GoalManager";
+import Modal from "../components/Modal";
 
 /* ═══════════════════════════════════════════
  *  PENGATURAN SCREEN — NEW LAYOUT
