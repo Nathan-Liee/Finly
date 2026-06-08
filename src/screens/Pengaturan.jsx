@@ -217,11 +217,12 @@ export default function PengaturanScreen({
   const [showGoalModal, setShowGoalModal] = useState(false);
 
   useEffect(() => {
-    // TODO: Ganti hardcoded email ini dengan env variable atau admin check dari backend
-    if (user?.email?.toLowerCase() === "xybcaa.454@gmail.com") {
+    if (profile?.is_admin) {
       setIsAdmin(true);
+    } else {
+      setIsAdmin(false);
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchFeedbackList = async (filter) => {
     const f = filter || feedbackStatusFilter;

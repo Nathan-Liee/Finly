@@ -161,7 +161,9 @@ export default function LaporanScreen({
   const exportCSV = () => {
     const esc = (v) => {
       const s = String(v ?? "");
-      return /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      // CSV injection prevention: prefix =, +, -, @, tab, \r with single quote
+      const safe = /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+      return /["\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
     };
     const lines = [];
     lines.push([esc("Aplikasi"), esc("Kasapp")].join(","));
