@@ -581,9 +581,15 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
                     {t._recurringId ? <span style={{ marginRight: 4 }}>🕐</span> : null}
                     {t.type === "masuk" ? "Pemasukan" : (t.kategori || "Pengeluaran")}
                   </p>
-                  <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>
-                    {t.catatan && t.catatan !== "-" ? t.catatan : (t.metode ? t.metode.toUpperCase() : "")}
-                  </p>
+                  {t.catatan && t.catatan !== "-" ? (
+                    <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>
+                      {t.catatan}
+                    </p>
+                  ) : t.metode ? (
+                    <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--text-muted)", fontFamily: "'Inter', sans-serif" }}>
+                      {t.metode.toUpperCase()}
+                    </p>
+                  ) : null}
                   {t.tag && tagList && (() => {
                     const tag = tagList.find(tg => tg.id === t.tag);
                     return tag ? (

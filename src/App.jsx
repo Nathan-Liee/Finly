@@ -515,6 +515,13 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  /* ─── Listen for toast events from child screens ─── */
+  useEffect(() => {
+    const handler = (e) => showToast(e.detail.msg, e.detail.type || 'error');
+    window.addEventListener('finly-toast', handler);
+    return () => window.removeEventListener('finly-toast', handler);
+  }, []);
+
   /* ─── UI helpers ─── */
   const showToast = (msg, type = "success") => {
     const id = Date.now();
@@ -1416,7 +1423,7 @@ export default function App() {
                         </p>
                       </div>
                       <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: t.type === "masuk" ? "var(--success)" : "var(--danger)" }}>
-                        {formatAngka(String(t.jumlah))}
+                        {formatUang(t.jumlah)}
                       </p>
                     </div>
                   </div>

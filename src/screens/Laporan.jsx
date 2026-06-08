@@ -437,7 +437,7 @@ export default function LaporanScreen({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {c.transaksi.map((t, i) => (
-              <div key={i} style={{
+              <div key={`${tgl}-${i}`} style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                 background: "var(--input-bg)", borderRadius: 10,
               }}>
@@ -499,7 +499,7 @@ export default function LaporanScreen({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (confirm(`Hapus semua ${c.transaksi.length} transaksi di ${new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}?`)) {
+              if (window.confirm(`Hapus semua ${c.transaksi.length} transaksi di ${new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}?`)) {
                 onDeleteAllTx?.(tgl);
                 closeModal?.();
               }
@@ -565,7 +565,7 @@ export default function LaporanScreen({
               doc.text(`Export: ${new Date().toLocaleString("id-ID")} | ${rows.length} transaksi | Masuk: Rp ${totalMasuk.toLocaleString("id-ID")} | Keluar: Rp ${totalKeluar.toLocaleString("id-ID")}`, 14, 22);
               doc.autoTable({ head: [["Tanggal","Tipe","Metode","Kategori","Catatan","Jumlah"]], body: rows.map(r => [r.tanggal, r.tipe, r.metode, r.kategori, r.catatan, r.jumlah.toLocaleString("id-ID")]), startY: 26, styles: { fontSize: 7 }, headStyles: { fillColor: [107, 126, 255] } });
               doc.save(`finly-laporan-${today}.pdf`);
-            } catch(e) { alert("Gagal export PDF: " + e.message); }
+            } catch(e) { window.dispatchEvent(new CustomEvent('finly-toast', { detail: { msg: "Gagal export PDF: " + e.message, type: "error" } })); }
           }} style={{
             background: "var(--surface)", border: "1px solid var(--border)",
             borderRadius: 10, padding: "8px 14px", cursor: "pointer", color: "var(--text-secondary)",
@@ -589,7 +589,7 @@ export default function LaporanScreen({
               const wb = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(wb, ws, "Laporan");
               XLSX.writeFile(wb, `finly-laporan-${today}.xlsx`);
-            } catch(e) { alert("Gagal export Excel: " + e.message); }
+            } catch(e) { window.dispatchEvent(new CustomEvent('finly-toast', { detail: { msg: "Gagal export Excel: " + e.message, type: "error" } })); }
           }} style={{
             background: "var(--surface)", border: "1px solid var(--border)",
             borderRadius: 10, padding: "8px 14px", cursor: "pointer", color: "var(--text-secondary)",

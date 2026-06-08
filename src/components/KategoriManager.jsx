@@ -40,7 +40,7 @@ export default function KategoriManager({ kategoriList, onUpdateKategori, data }
         borderRadius: 16, overflow: "hidden", margin: "0 20px 16px",
       }}>
         {kategoriList.map((k, i) => (
-          <div key={i}>
+          <div key={k}>
             {i > 0 && <div style={{ height: 1, background: "var(--border)", margin: "0 16px" }} />}
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px" }}>
               {editIdx === i ? (
