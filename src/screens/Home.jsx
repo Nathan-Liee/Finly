@@ -508,8 +508,8 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {(() => {
                 const maxKat = Math.max(...kategoriBreakdown.map(k => k.jumlah), 1);
-                return kategoriBreakdown.map(k => (
-                  <div key={k.kategori}>
+                return kategoriBreakdown.map((k, i) => (
+                  <div key={`${k.kategori}-${i}`}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>{k.kategori}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>{formatUang(k.jumlah)}</span>
@@ -557,8 +557,7 @@ const HomeScreen = memo(function HomeScreen({ data, today, todayCalc, setModal, 
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[...todayTransaksi].reverse().map((t, revIdx) => {
-              const realIdx = todayTransaksi.length - 1 - revIdx;
-              const stableKey = `${realIdx}-${t.type}-${t.jumlah}-${t.metode || ''}-${t.kategori || ''}`;
+              const stableKey = `${t.type}-${t.jumlah}-${t.metode || ''}-${t.kategori || ''}`;
               return (
               <div key={stableKey} style={{
                 display: "flex", alignItems: "center", gap: 12,

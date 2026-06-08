@@ -48,7 +48,7 @@ export default function AttachmentUpload({ value = [], onChange }) {
       for (let i = 0; i < Math.min(files.length, remaining); i++) {
         try {
           const dataUrl = await compressImage(files[i]);
-          items.push(dataUrl);
+          items.push({ id: Date.now() + '-' + Math.random() + '-' + Math.random(), dataUrl });
         } catch (err) {
           console.warn("Gagal kompres gambar:", err);
         }
@@ -60,8 +60,8 @@ export default function AttachmentUpload({ value = [], onChange }) {
     }
   };
 
-  const removeAttachment = (idx) => {
-    const next = value.filter((_, i) => i !== idx);
+  const removeAttachment = (id) => {
+    const next = value.filter(a => a.id !== id);
     onChange(next);
   };
 
@@ -77,19 +77,19 @@ export default function AttachmentUpload({ value = [], onChange }) {
       {/* Preview existing attachments */}
       {value.length > 0 && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-          {value.map((dataUrl, idx) => (
-            <div key={idx} style={{
+          {value.map(att => (
+            <div key={att.id} style={{
               position: "relative", width: 72, height: 72, borderRadius: 10,
               overflow: "hidden", border: "1px solid var(--border)", flexShrink: 0,
             }}>
               <img
-                src={dataUrl}
-                alt={`Lampiran ${idx + 1}`}
+                src={att.dataUrl}
+                alt="Lampiran"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
               <button
                 type="button"
-                onClick={() => removeAttachment(idx)}
+                onClick={() => removeAttachment(att.id)}
                 style={{
                   position: "absolute", top: 2, right: 2, width: 20, height: 20,
                   borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)",

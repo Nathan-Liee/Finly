@@ -8,6 +8,11 @@ import { formatUang } from "../utils/format";
  *  Analytics dashboard style
  * ═══════════════════════════════════════════ */
 
+function safeDate(tgl) {
+  const [y,m,d] = tgl.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
 /* ─── Enhanced Bar Chart ─── */
 function AnalyticsChart({ data, today }) {
   const dates = Object.keys(data).sort().slice(-14);
@@ -74,7 +79,7 @@ function AnalyticsChart({ data, today }) {
       <div style={{ display: "flex", gap: 4 }}>
         {bars.map(({ tgl }) => {
           const isToday = tgl === today;
-          const d = new Date(tgl + "T00:00:00");
+          const d = safeDate(tgl);
           return (
             <div key={tgl} style={{
               flex: 1, textAlign: "center", fontSize: 9, fontWeight: 600,
@@ -198,7 +203,7 @@ export default function LaporanScreen({
   const renderMingguan = () => {
     const weeks = {};
     dates.forEach(tgl => {
-      const date = new Date(tgl + "T00:00:00");
+      const date = safeDate(tgl);
       const day = date.getDay();
       const diff = date.getDate() - day + (day === 0 ? -6 : 1);
       const monday = new Date(date.setDate(diff));
@@ -220,7 +225,8 @@ export default function LaporanScreen({
           const weekDates = weeks[weekKey];
           const wMasuk = weekDates.reduce((s, tgl) => s + (calc(tgl).totalMasuk ?? 0), 0);
           const wKeluar = weekDates.reduce((s, tgl) => s + (calc(tgl).totalKeluar ?? 0), 0);
-          const endDate = new Date(weekKey + "T00:00:00");
+          const maxW = Math.max(...weekDates.map(d => (calc(d).totalMasuk ?? 0) + (calc(d).totalKeluar ?? 0)), 1);
+          const endDate = safeDate(weekKey);
           endDate.setDate(endDate.getDate() + 6);
           return (
             <div key={weekKey} style={{
@@ -230,7 +236,7 @@ export default function LaporanScreen({
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                 <div>
                   <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 14, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
-                    {new Date(weekKey + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short" })} — {endDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                    {safeDate(weekKey).toLocaleDateString("id-ID", { day: "numeric", month: "short" })} — {endDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
                   </p>
                   <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 12 }}>{weekDates.length} hari</p>
                 </div>
@@ -244,7 +250,6 @@ export default function LaporanScreen({
                 {weekDates.map(tgl => {
                   const c = calc(tgl);
                   const total = (c.totalMasuk ?? 0) + (c.totalKeluar ?? 0);
-                  const maxW = Math.max(...weekDates.map(d => (calc(d).totalMasuk ?? 0) + (calc(d).totalKeluar ?? 0)), 1);
                   const h = (total / maxW) * 28;
                   return (
                     <div key={tgl} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
@@ -254,7 +259,7 @@ export default function LaporanScreen({
                         borderRadius: "3px 3px 0 0", opacity: total > 0 ? 1 : 0.2,
                       }} />
                       <span style={{ fontSize: 8, color: "var(--text-muted)", fontWeight: 600 }}>
-                        {new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short" }).charAt(0)}
+                        {safeDate(tgl).toLocaleDateString("id-ID", { weekday: "short" }).charAt(0)}
                       </span>
                     </div>
                   );
@@ -499,7 +504,7 @@ export default function LaporanScreen({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (window.confirm(`Hapus semua ${c.transaksi.length} transaksi di ${new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}?`)) {
+              if (window.confirm(`Hapus semua ${c.transaksi.length} transaksi di ${safeDate(tgl).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}?`)) {
                 onDeleteAllTx?.(tgl);
                 closeModal?.();
               }
@@ -800,7 +805,7 @@ export default function LaporanScreen({
                   }}>
                     <div>
                       <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 14, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
-                        {tgl === today ? "Hari Ini" : new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
+                        {tgl === today ? "Hari Ini" : safeDate(tgl).toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
                       </p>
                       <p style={{ margin: 0, color: "var(--text-muted)", fontSize: 12 }}>
                         {c.transaksi?.length ?? 0} transaksi
@@ -840,7 +845,7 @@ export default function LaporanScreen({
           }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--text)", fontFamily: "'Inter', sans-serif" }}>
-                Detail — {selectedDate === today ? "Hari Ini" : new Date(selectedDate + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}
+                Detail — {selectedDate === today ? "Hari Ini" : safeDate(selectedDate).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}
               </h3>
               <button onClick={closeModal} style={{
                 width: 32, height: 32, borderRadius: 10, border: "none",

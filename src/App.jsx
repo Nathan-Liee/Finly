@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Suspense, lazy } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense, lazy } from "react";
 import { supabase } from "./utils/supabase";
 const LoginScreen = lazy(() => import("./screens/Login"));
 
@@ -57,6 +57,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem("finly-sidebar-collapsed") === "true"; } catch { return false; }
   });
+  const rolloverToastRef = useRef(false);
 
   /* ─── Reminder Preferences ─── */
   const [reminderPrefs, setReminderPrefs] = useState(() => {
@@ -242,14 +243,35 @@ export default function App() {
       if (changed) {
         next[currentMonth] = currentBudget;
         try { localStorage.setItem("finly-budget", JSON.stringify(next)); } catch {}
-        // Notify user — use setTimeout to avoid setState during render
-        setTimeout(() => showToast("Sisa budget bulan lalu di-rollover! ⏪", "info"), 500);
+        rolloverToastRef.current = true;
       }
 
       try { localStorage.setItem("finly-rollover-month", currentMonth); } catch {}
       return next;
     });
   }, [data]);
+
+  /* ─── Show rollover toast (via ref to avoid side effect in state updater) ─── */
+  useEffect(() => {
+    if (rolloverToastRef.current) {
+      rolloverToastRef.current = false;
+      showToast("Sisa budget bulan lalu di-rollover! ⏪", "info");
+    }
+  });
+
+  /* ─── Legacy migration: kopi dari key kasapp ke finly ─── */
+  useEffect(() => {
+    try {
+      const oldData = localStorage.getItem("kasapp-data");
+      if (oldData && !localStorage.getItem("finly-data")) {
+        localStorage.setItem("finly-data", oldData);
+      }
+      const oldTheme = localStorage.getItem("kasapp-theme");
+      if (oldTheme && !localStorage.getItem("finly-theme")) {
+        localStorage.setItem("finly-theme", oldTheme);
+      }
+    } catch {}
+  }, []);
 
   /* ─── Recurring Transactions ─── */
   const [recurringRules, setRecurringRules] = useState(() => {
@@ -1624,14 +1646,18 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               <Btn onClick={() => {
                 const { rows } = getAllExportData();
-                const esc = (v) => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = '\t' + s; return /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+                const escCSV = (v) => {
+                  const s = String(v ?? "");
+                  if (/^[=+\-@\t\r]/.test(s)) return `"'${s}"`;
+                  return /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+                };
                 const lines = [
-                  [esc("Aplikasi"), esc("Finly")].join(","),
-                  [esc("Tanggal Export"), esc(new Date().toLocaleString("id-ID"))].join(","),
-                  [esc("Total Transaksi"), rows.length].join(","),
+                  [escCSV("Aplikasi"), escCSV("Finly")].join(","),
+                  [escCSV("Tanggal Export"), escCSV(new Date().toLocaleString("id-ID"))].join(","),
+                  [escCSV("Total Transaksi"), rows.length].join(","),
                   "",
-                  [esc("Tanggal"), esc("Tipe"), esc("Metode"), esc("Kategori"), esc("Catatan"), esc("Jumlah")].join(","),
-                  ...rows.map(r => [esc(r.tanggal), esc(r.tipe), esc(r.metode), esc(r.kategori), esc(r.catatan), r.jumlah].join(",")),
+                  [escCSV("Tanggal"), escCSV("Tipe"), escCSV("Metode"), escCSV("Kategori"), escCSV("Catatan"), escCSV("Jumlah")].join(","),
+                  ...rows.map(r => [escCSV(r.tanggal), escCSV(r.tipe), escCSV(r.metode), escCSV(r.kategori), escCSV(r.catatan), r.jumlah].join(",")),
                 ];
                 const csv = "\uFEFF" + lines.join("\n");
                 const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });

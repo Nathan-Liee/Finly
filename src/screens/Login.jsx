@@ -14,6 +14,7 @@ export default function LoginScreen({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
+  const [logging, setLogging] = useState(false);
 
   const resetForm = () => {
     setEmail(""); setPassword(""); setUsername("");
@@ -70,7 +71,9 @@ export default function LoginScreen({ onLogin }) {
           setMsg("Pendaftaran berhasil! Cek email kamu untuk konfirmasi akun.");
           return;
         }
+        setLogging(true);
         onLogin();
+        setLogging(false);
       } else {
         let loginEmail = trimmedEmail;
         const isEmail = trimmedEmail.includes('@');
@@ -85,7 +88,9 @@ export default function LoginScreen({ onLogin }) {
           if (error.message.includes('Email not confirmed')) throw new Error("Email belum dikonfirmasi. Cek inbox/spam!");
           throw error;
         }
+        setLogging(true);
         onLogin();
+        setLogging(false);
       }
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
@@ -203,6 +208,23 @@ export default function LoginScreen({ onLogin }) {
           </p>
         </div>
       </div>
+
+      {/* Loading spinner overlay */}
+      {logging && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.4)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: "50%",
+            border: "4px solid rgba(255,255,255,0.3)",
+            borderTopColor: "#fff",
+            animation: "spin 0.8s linear infinite",
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
     </div>
   );
 }
