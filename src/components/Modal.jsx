@@ -1,6 +1,30 @@
+import { useEffect, useRef } from "react";
 import Icon from "./Icon";
 
 export default function Modal({ show, onClose, title, children }) {
+  const modalRef = useRef(null);
+  const prevFocus = useRef(null);
+
+  useEffect(() => {
+    if (!show) return;
+    prevFocus.current = document.activeElement;
+    // Focus modal or first focusable element
+    requestAnimationFrame(() => {
+      const el = modalRef.current;
+      if (!el) return;
+      el.focus();
+      // Try to find first input/button inside
+      const first = el.querySelector("input, button, textarea, select, [tabindex]:not([tabindex='-1'])");
+      if (first) first.focus();
+    });
+    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      prevFocus.current?.focus?.();
+    };
+  }, [show, onClose]);
+
   if (!show) return null;
 
   return (
@@ -19,11 +43,15 @@ export default function Modal({ show, onClose, title, children }) {
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
         style={{
           width: "100%",
           maxWidth: 440,
